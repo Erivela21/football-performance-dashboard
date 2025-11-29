@@ -2,6 +2,60 @@
 
 A professional trainer dashboard that ingests football athletes' data and transforms it into helpful insights to prevent injury and optimize workload.
 
+---
+
+## Team Structure & Roles
+
+**Sprint 0 Roles:**
+- **Enrique** - Scrum Master & Documentation Lead
+- **Gonzalo** - Product Owner & Cloud Infrastructure
+- **Matthew** - Backend Developer (API Development)
+- **Manu** - DevOps Engineer (CI/CD Pipeline)
+- **Maximiliano** - Monitoring & Reliability Engineer
+- **Elias** - Frontend/UX Developer & Testing
+
+> **Note:** Product Owner and Scrum Master roles will rotate in future sprints to give everyone leadership experience.
+
+### Role Responsibilities
+
+**Product Owner (Gonzalo):**
+- Maintain and prioritize product backlog
+- Define user stories and acceptance criteria
+- Stakeholder communication
+- Sprint planning decisions
+
+**Scrum Master (Enrique):**
+- Facilitate daily standups and sprint ceremonies
+- Remove blockers and impediments
+- Ensure Scrum practices are followed
+- Document sprint outcomes and retrospectives
+
+**Backend Developer (Matthew):**
+- Develop FastAPI REST API
+- Implement CRUD operations
+- Database schema design and ORM integration
+- API endpoint testing
+
+**DevOps Engineer (Manu):**
+- Set up CI/CD pipeline with GitHub Actions
+- Configure Azure App Service deployment
+- Manage environment variables and secrets
+- Infrastructure automation
+
+**Monitoring & Reliability Engineer (Maximiliano):**
+- Configure Application Insights
+- Set up logging and telemetry
+- Create monitoring dashboards
+- Define health checks and alerts
+
+**Frontend/UX & Testing (Elias):**
+- Design user interface (if applicable)
+- Write unit and integration tests
+- API documentation and testing
+- Quality assurance
+
+---
+
 ## Project Goal
 
 The Football Performance Dashboard aims to provide coaches and sports scientists with a comprehensive platform to:
@@ -199,6 +253,76 @@ football-performance-dashboard/
 - **Application Insights** - Monitoring and analytics
 - **GitHub Actions** - CI/CD automation
 - **pytest** - Testing framework
+
+---
+
+## Sprint 0 Deliverables ✓
+
+**Completed on November 29, 2025**
+
+- ✓ Team formed with 6 members
+- ✓ Roles assigned (Product Owner, Scrum Master, Developers)
+- ✓ Project idea selected: Football Performance Dashboard
+- ✓ GitHub repository created and initialized
+- ✓ Product backlog drafted with user stories
+- ✓ MVP scope defined (REST API with CRUD operations)
+- ✓ Architecture designed (Azure App Service + SQL Database + Application Insights)
+- ✓ Technology stack selected (FastAPI, SQLAlchemy, pytest)
+- ✓ Project structure created
+- ✓ Documentation completed (README with setup instructions)
+- ✓ Development environment setup (Python venv)
+
+**Next Sprint:** Sprint 1 - Azure environment setup and initial deployment
+
+---
+
+## Product Backlog (Initial)
+
+**Priority 1 (MVP - Must Have):**
+- As a coach, I want to add player profiles so I can track their information
+- As a coach, I want to create training sessions so I can record workouts
+- As a coach, I want to log session statistics so I can monitor player workload
+- As a coach, I want to view all players so I can see my roster
+- As a system, I want health checks so Azure can monitor uptime
+
+**Priority 2 (Future Enhancements):**
+- As a coach, I want to see workload charts so I can prevent injuries
+- As a coach, I want to filter players by position so I can organize training
+- As a player, I want to view my own stats so I can track progress
+- As a coach, I want to export data to CSV so I can analyze externally
+
+**Priority 3 (Nice to Have):**
+- As a coach, I want injury prediction alerts based on workload trends
+- As a coach, I want to compare players side-by-side
+- As a system admin, I want authentication and authorization
+
+---
+
+## Definition of Done
+
+A user story is considered "Done" when:
+- [ ] Code is written and follows PEP 8 standards
+- [ ] Unit tests are written and passing (>80% coverage)
+- [ ] API endpoint is documented in Swagger
+- [ ] Code is reviewed by at least one team member
+- [ ] Changes are merged to main branch
+- [ ] Deployed successfully to Azure App Service
+- [ ] Tested in production environment
+- [ ] Product Owner has accepted the feature
+
+---
+
+## Sprint Schedule
+
+| Sprint | Dates | Goals |
+|--------|-------|-------|
+| Sprint 0 | Nov 27-29 | Team setup, planning, documentation |
+| Sprint 1 | Nov 30-Dec 1 | Azure setup, skeleton app deployment |
+| Sprint 2 | Dec 2-3 | Core features, database, monitoring |
+| Sprint 3 | Dec 4 | Polish, testing, demo preparation |
+| **Demo** | **Dec 4, 2025** | **Sprint Review & Presentation** |
+
+---
 
 ## License
 
