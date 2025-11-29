@@ -1,6 +1,6 @@
 """Stats API router for CRUD operations on session statistics."""
 
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 def get_all_stats(
     skip: int = 0,
     limit: int = 100,
-    session_id: int = None,
+    session_id: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
     """Get all session statistics with optional filtering by session."""

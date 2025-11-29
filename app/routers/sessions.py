@@ -1,6 +1,6 @@
 """Sessions API router for CRUD operations on training sessions."""
 
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 def get_sessions(
     skip: int = 0,
     limit: int = 100,
-    player_id: int = None,
+    player_id: Optional[int] = None,
     db: Session = Depends(get_db),
 ):
     """Get all training sessions with optional filtering by player."""

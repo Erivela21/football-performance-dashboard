@@ -117,6 +117,9 @@ The MVP includes:
    
    # Application Insights (optional for local)
    APPLICATIONINSIGHTS_CONNECTION_STRING=your-connection-string
+   
+   # CORS settings (comma-separated list, defaults to * if not set)
+   CORS_ALLOWED_ORIGINS=https://your-frontend.com,https://localhost:3000
    ```
 
 5. **Run the application**

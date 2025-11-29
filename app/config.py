@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     app_name: str = "Football Performance Dashboard"
     debug: bool = False
 
+    # CORS settings (comma-separated list of allowed origins)
+    cors_allowed_origins: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     def get_database_url(self) -> str:
@@ -34,6 +37,12 @@ class Settings(BaseSettings):
                 f"?driver={driver}&Encrypt=yes&TrustServerCertificate=no"
             )
         return "sqlite:///./test.db"
+
+    def get_cors_origins(self) -> list[str]:
+        """Get list of allowed CORS origins."""
+        if self.cors_allowed_origins:
+            return [origin.strip() for origin in self.cors_allowed_origins.split(",")]
+        return ["*"]
 
 
 settings = Settings()
