@@ -1,9 +1,13 @@
 """Football Performance Dashboard - Main FastAPI Application."""
+"""Football Performance Dashboard - Main FastAPI Application."""
 
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.db.database import engine, Base
@@ -68,6 +72,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
 # Include routers
 app.include_router(health.router)
 app.include_router(players.router)
@@ -76,10 +83,5 @@ app.include_router(stats.router)
 
 
 @app.get("/")
-def root():
-    """Root endpoint returning API information."""
-    return {
-        "message": "Welcome to the Football Performance Dashboard API",
-        "docs": "/docs",
-        "health": "/health",
-    }
+async def read_root():
+    return FileResponse("app/static/index.html")
