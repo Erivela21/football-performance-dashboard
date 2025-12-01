@@ -13,7 +13,7 @@ def check_import(module_name):
 
 def check_env_vars():
     # These are expected in Azure
-    required_vars = [] # None strictly required for app startup as defaults exist, but good to check
+    # These are expected in Azure
     print("ℹ️  Checking environment variables...")
     # In Azure, these are set via App Service Configuration
     azure_vars = ["AZURE_SQL_SERVER", "AZURE_SQL_DATABASE", "AZURE_SQL_USERNAME", "AZURE_SQL_PASSWORD", "APPLICATIONINSIGHTS_CONNECTION_STRING"]
@@ -39,7 +39,7 @@ def main():
     print("\n2️⃣  Checking Application Import:")
     try:
         from app.main import app
-        print("✅ Successfully imported app.main:app")
+        print(f"✅ Successfully imported app.main:app ({app.title})")
     except Exception as e:
         print(f"❌ Failed to import app: {e}")
         sys.exit(1)
