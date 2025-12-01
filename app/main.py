@@ -1,5 +1,4 @@
 """Football Performance Dashboard - Main FastAPI Application."""
-"""Football Performance Dashboard - Main FastAPI Application."""
 
 import logging
 from contextlib import asynccontextmanager
