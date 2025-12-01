@@ -30,11 +30,12 @@ class Settings(BaseSettings):
         if self.database_url:
             return self.database_url
         if self.azure_sql_server and self.azure_sql_database:
-            driver = "{ODBC Driver 18 for SQL Server}"
+            from urllib.parse import quote_plus
+            driver = "ODBC Driver 18 for SQL Server"
             return (
                 f"mssql+pyodbc://{self.azure_sql_username}:{self.azure_sql_password}"
                 f"@{self.azure_sql_server}/{self.azure_sql_database}"
-                f"?driver={driver}&Encrypt=yes&TrustServerCertificate=no"
+                f"?driver={quote_plus(driver)}&Encrypt=yes&TrustServerCertificate=no"
             )
         return "sqlite:///./test.db"
 
