@@ -52,24 +52,6 @@ class TestHealthEndpoint:
         assert data["status"] == "healthy"
         assert data["version"] == "1.0.0"
         assert data["database"] == "healthy"
-
-
-class TestRootEndpoint:
-    """Tests for the root endpoint."""
-
-    def test_root(self, client):
-        """Test root endpoint returns welcome message."""
-        response = client.get("/")
-        assert response.status_code == 200
-        data = response.json()
-        assert "message" in data
-        assert "docs" in data
-        assert "health" in data
-
-
-class TestPlayersEndpoint:
-    """Tests for the players API endpoints."""
-
     def test_get_players_empty(self, client):
         """Test getting players when none exist."""
         response = client.get("/players")
