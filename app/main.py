@@ -54,106 +54,122 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
         
-        # Schema Migration: Handle age -> birth_date conversion
+        # Schema Migration: Add missing columns and handle age -> birth_date conversion
         try:
             is_sqlite = "sqlite" in str(engine.url).lower()
             is_mssql = engine.dialect.name == "mssql" or "mssql" in str(engine.url)
             
             with engine.connect() as connection:
+                # IMPORTANT: Run migrations for all databases
                 if is_sqlite:
-                    logger.info("Detected SQLite. Checking schema...")
+                    logger.info("Detected SQLite. Running schema migrations...")
                     
-                    # Check if birth_date column exists
+                    # Check existing columns
                     cursor = connection.execute(text("PRAGMA table_info(players)"))
                     columns = {row[1] for row in cursor.fetchall()}
                     
-                    # Add birth_date if it doesn't exist
-                    if 'birth_date' not in columns:
-                        logger.info("Adding birth_date column to players table...")
-                        connection.execute(text("ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"))
-                        connection.commit()
-                        logger.info("birth_date column added successfully")
-                    
-                    # Add surname if it doesn't exist
+                    # Add surname if missing
                     if 'surname' not in columns:
-                        logger.info("Adding surname column to players table...")
-                        connection.execute(text("ALTER TABLE players ADD COLUMN surname VARCHAR(100) NULL"))
-                        connection.commit()
-                        logger.info("surname column added successfully")
+                        logger.info("Adding surname column...")
+                        try:
+                            connection.execute(text("ALTER TABLE players ADD COLUMN surname VARCHAR(100) NULL"))
+                            connection.commit()
+                            logger.info("surname column added")
+                        except Exception as e:
+                            logger.warning(f"surname column may already exist: {e}")
                     
-                    # Add aka if it doesn't exist
+                    # Add aka if missing
                     if 'aka' not in columns:
-                        logger.info("Adding aka column to players table...")
-                        connection.execute(text("ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"))
-                        connection.commit()
-                        logger.info("aka column added successfully")
+                        logger.info("Adding aka column...")
+                        try:
+                            connection.execute(text("ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"))
+                            connection.commit()
+                            logger.info("aka column added")
+                        except Exception as e:
+                            logger.warning(f"aka column may already exist: {e}")
                     
-                    # Remove age column if it exists (SQLite doesn't support DROP COLUMN directly in older versions)
+                    # Add birth_date if missing
+                    if 'birth_date' not in columns:
+                        logger.info("Adding birth_date column...")
+                        try:
+                            connection.execute(text("ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"))
+                            connection.commit()
+                            logger.info("birth_date column added")
+                        except Exception as e:
+                            logger.warning(f"birth_date column may already exist: {e}")
+                    
+                    # Remove age column if it exists
                     if 'age' in columns:
-                        logger.info("Migrating age column to birth_date...")
+                        logger.info("Dropping age column...")
                         try:
                             connection.execute(text("ALTER TABLE players DROP COLUMN age"))
                             connection.commit()
-                            logger.info("age column dropped successfully")
+                            logger.info("age column dropped")
                         except Exception as e:
-                            logger.warning(f"Could not drop age column (may be normal in SQLite): {e}")
+                            logger.warning(f"Could not drop age column: {e}")
                     
                 elif is_mssql:
-                    logger.info("Detected SQL Server. Checking schema...")
+                    logger.info("Detected SQL Server. Running schema migrations...")
                     
-                    # 1. Add birth_date column if it doesn't exist
-                    connection.execute(text("""
-                        IF COL_LENGTH('players', 'birth_date') IS NULL
-                        BEGIN
-                            ALTER TABLE players ADD birth_date VARCHAR(10) NULL;
-                        END
-                    """))
-                    connection.commit()
-                    logger.info("Schema migration: Checked/Added 'birth_date' column.")
-
-                    # 1b. Add surname column if it doesn't exist
-                    connection.execute(text("""
-                        IF COL_LENGTH('players', 'surname') IS NULL
-                        BEGIN
-                            ALTER TABLE players ADD surname VARCHAR(100) NULL;
-                        END
-                    """))
-                    connection.commit()
-                    logger.info("Schema migration: Checked/Added 'surname' column.")
-
-                    # 1c. Add aka column if it doesn't exist
-                    connection.execute(text("""
-                        IF COL_LENGTH('players', 'aka') IS NULL
-                        BEGIN
-                            ALTER TABLE players ADD aka VARCHAR(100) NULL;
-                        END
-                    """))
-                    connection.commit()
-                    logger.info("Schema migration: Checked/Added 'aka' column.")
-
-                    # 2. Add Foreign Key if it doesn't exist (and teams table exists)
-                    connection.execute(text("""
-                        IF OBJECT_ID('teams', 'U') IS NOT NULL 
-                           AND OBJECT_ID('FK_players_teams', 'F') IS NULL
-                        BEGIN
-                            ALTER TABLE players WITH CHECK ADD CONSTRAINT FK_players_teams FOREIGN KEY(team_id) REFERENCES teams(id);
-                        END
-                    """))
-                    connection.commit()
-                    logger.info("Schema migration: Checked/Added FK_players_teams constraint.")
+                    # Add surname column if it doesn't exist
+                    try:
+                        connection.execute(text("""
+                            IF COL_LENGTH('players', 'surname') IS NULL
+                            BEGIN
+                                ALTER TABLE players ADD surname VARCHAR(100) NULL;
+                                PRINT 'Added surname column';
+                            END
+                        """))
+                        connection.commit()
+                        logger.info("surname column checked/added")
+                    except Exception as e:
+                        logger.warning(f"Issue with surname column: {e}")
                     
-                    # 3. Drop age column if it exists
-                    connection.execute(text("""
-                        IF COL_LENGTH('players', 'age') IS NOT NULL
-                        BEGIN
-                            ALTER TABLE players DROP COLUMN age;
-                        END
-                    """))
-                    connection.commit()
-                    logger.info("Schema migration: Dropped 'age' column.")
-
+                    # Add aka column if it doesn't exist
+                    try:
+                        connection.execute(text("""
+                            IF COL_LENGTH('players', 'aka') IS NULL
+                            BEGIN
+                                ALTER TABLE players ADD aka VARCHAR(100) NULL;
+                                PRINT 'Added aka column';
+                            END
+                        """))
+                        connection.commit()
+                        logger.info("aka column checked/added")
+                    except Exception as e:
+                        logger.warning(f"Issue with aka column: {e}")
+                    
+                    # Add birth_date column if it doesn't exist
+                    try:
+                        connection.execute(text("""
+                            IF COL_LENGTH('players', 'birth_date') IS NULL
+                            BEGIN
+                                ALTER TABLE players ADD birth_date VARCHAR(10) NULL;
+                                PRINT 'Added birth_date column';
+                            END
+                        """))
+                        connection.commit()
+                        logger.info("birth_date column checked/added")
+                    except Exception as e:
+                        logger.warning(f"Issue with birth_date column: {e}")
+                    
+                    # Drop age column if it exists
+                    try:
+                        connection.execute(text("""
+                            IF COL_LENGTH('players', 'age') IS NOT NULL
+                            BEGIN
+                                ALTER TABLE players DROP COLUMN age;
+                                PRINT 'Dropped age column';
+                            END
+                        """))
+                        connection.commit()
+                        logger.info("age column checked/dropped")
+                    except Exception as e:
+                        logger.warning(f"Issue dropping age column: {e}")
+                
+                logger.info("Schema migrations completed successfully")
         except Exception as e:
-            logger.warning(f"Schema migration encountered an issue (may be normal): {e}")
+            logger.error(f"Schema migration failed: {e}", exc_info=True)
         
         # Create demo user if not exists
         try:
