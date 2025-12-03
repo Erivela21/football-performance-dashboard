@@ -56,20 +56,35 @@ async def lifespan(app: FastAPI):
         
         # Schema Migration: Add team_id to players if missing (Fix for Azure SQL)
         try:
-            if engine.dialect.name == "mssql":
+            # Check if we are using SQL Server (mssql dialect)
+            is_mssql = engine.dialect.name == "mssql" or "mssql" in str(engine.url)
+            
+            if is_mssql:
+                logger.info("Detected SQL Server. Checking schema...")
                 with engine.connect() as connection:
+                    # 1. Add team_id column if it doesn't exist
                     connection.execute(text("""
-                        IF EXISTS (SELECT * FROM sys.tables WHERE name = 'players') 
-                        AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'players') AND name = 'team_id')
+                        IF COL_LENGTH('players', 'team_id') IS NULL
                         BEGIN
                             ALTER TABLE players ADD team_id INT NULL;
+                        END
+                    """))
+                    connection.commit()
+                    logger.info("Schema migration: Checked/Added 'team_id' column.")
+
+                    # 2. Add Foreign Key if it doesn't exist (and teams table exists)
+                    connection.execute(text("""
+                        IF OBJECT_ID('teams', 'U') IS NOT NULL 
+                           AND OBJECT_ID('FK_players_teams', 'F') IS NULL
+                        BEGIN
                             ALTER TABLE players WITH CHECK ADD CONSTRAINT FK_players_teams FOREIGN KEY(team_id) REFERENCES teams(id);
                         END
                     """))
                     connection.commit()
-                    logger.info("Schema migration: Checked 'team_id' in 'players' table.")
+                    logger.info("Schema migration: Checked/Added FK_players_teams constraint.")
+                    
         except Exception as e:
-            logger.warning(f"Schema migration warning: {e}")
+            logger.error(f"Schema migration failed: {e}")
         
         # Create demo user if not exists
         try:
