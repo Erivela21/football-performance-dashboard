@@ -225,7 +225,10 @@
                         <p id="profile-name" class="text-sm font-bold text-white truncate">Coach</p>
                         <p class="text-xs text-gray-400 truncate">Head Coach</p>
                     </div>
-                    <button onclick="window.openSettingsModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-gear"></i></button>
+                    <div class="flex gap-2">
+                        <button onclick="window.openSettingsModal()" class="text-gray-400 hover:text-white transition-colors" title="Settings"><i class="fa-solid fa-gear"></i></button>
+                        <button onclick="window.logout()" class="text-gray-400 hover:text-red-400 transition-colors" title="Logout"><i class="fa-solid fa-sign-out-alt"></i></button>
+                    </div>
                 </div>
             </div>
         </aside>

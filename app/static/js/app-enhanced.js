@@ -240,13 +240,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function logout() {
+    window.logout = function() {
         STATE.token = null;
         STATE.user = null;
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         showLogin();
-    }
+    };
 
     // --- Data Loading ---
     async function loadInitialData() {
