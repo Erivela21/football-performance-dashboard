@@ -11,7 +11,7 @@ from sqlalchemy import text
 
 from app.config import settings
 from app.db.database import engine, Base, get_db
-from app.routers import players, sessions, stats, health, teams, schedule, analytics
+from app.routers import players, sessions, stats, health, teams, schedule, analytics, admin
 from app.routers import auth
 from app.models.models import User, Team
 from app.utils.auth import get_password_hash
@@ -97,6 +97,14 @@ async def lifespan(app: FastAPI):
                         logger.info("Column 'user_id' added to teams")
                     except Exception as e:
                         logger.debug(f"Column 'user_id' add failed (may already exist): {e}")
+                    
+                    # Add user role column
+                    try:
+                        logger.info("Attempting to add column 'role' to users...")
+                        connection.execute(text("ALTER TABLE dbo.users ADD role VARCHAR(50) DEFAULT 'coach' NULL"))
+                        logger.info("Column 'role' added to users")
+                    except Exception as e:
+                        logger.debug(f"Column 'role' add failed (may already exist): {e}")
                 
             elif is_sqlite:
                 logger.info("Running SQLite schema migrations...")
@@ -132,6 +140,17 @@ async def lifespan(app: FastAPI):
                             logger.info("Column 'user_id' added to teams")
                         except Exception as e:
                             logger.warning(f"Failed to add column 'user_id': {e}")
+                    
+                    # Add user role column
+                    cursor = connection.execute(text("PRAGMA table_info(users)"))
+                    user_columns = {row[1] for row in cursor.fetchall()}
+                    if "role" not in user_columns:
+                        try:
+                            logger.info("Adding column 'role' to SQLite users...")
+                            connection.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'coach' NULL"))
+                            logger.info("Column 'role' added to users")
+                        except Exception as e:
+                            logger.warning(f"Failed to add column 'role': {e}")
             
             logger.info("Schema migrations completed")
         except Exception as e:
@@ -140,12 +159,31 @@ async def lifespan(app: FastAPI):
         # Create demo user if not exists
         try:
             db = next(get_db())
+            
+            # Create or get demo admin user
+            admin_user = db.query(User).filter(User.email == "admin@dashboard.com").first()
+            if not admin_user:
+                admin_user = User(
+                    username="admin",
+                    email="admin@dashboard.com",
+                    password_hash=get_password_hash("Admin1234"),
+                    role="admin",
+                    is_active=1
+                )
+                db.add(admin_user)
+                db.commit()
+                logger.info("Admin user created: admin@dashboard.com / Admin1234")
+            else:
+                logger.info("Admin user already exists")
+            
+            # Create or get demo coach user
             demo_user = db.query(User).filter(User.email == "demo@coach.com").first()
             if not demo_user:
                 demo_user = User(
                     username="demo",
                     email="demo@coach.com",
                     password_hash=get_password_hash("Demo1234"),
+                    role="coach",
                     is_active=1
                 )
                 db.add(demo_user)
@@ -209,6 +247,7 @@ app.include_router(sessions.router)
 app.include_router(stats.router)
 app.include_router(schedule.router)
 app.include_router(analytics.router)
+app.include_router(admin.router)
 
 
 @app.exception_handler(Exception)

@@ -176,6 +176,7 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
+    role: str = "coach"
     is_active: bool = True
     created_at: Optional[datetime]
 
@@ -228,5 +229,31 @@ class MatchScheduleResponse(MatchScheduleBase):
     
     id: int
     created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+# Admin schemas
+class AdminUserUpdate(BaseModel):
+    """Schema for admin to update user details."""
+    password: Optional[str] = Field(None, min_length=4)
+    role: Optional[str] = Field(None, pattern="^(admin|coach)$")
+    is_active: Optional[bool] = None
+
+
+class TeamAssignment(BaseModel):
+    """Schema for assigning/reassigning teams to coaches."""
+    team_id: int
+    user_id: int
+
+
+class CoachListResponse(BaseModel):
+    """Schema for listing coaches with their teams."""
+    id: int
+    username: str
+    email: Optional[str]
+    role: str
+    is_active: bool
+    teams: list = []
     
     model_config = ConfigDict(from_attributes=True)

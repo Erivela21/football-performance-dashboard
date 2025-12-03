@@ -22,6 +22,7 @@ class User(Base):
     username = Column(String(150), unique=True, nullable=False, index=True)
     email = Column(String(254), unique=True, nullable=True, index=True)
     password_hash = Column(String(255), nullable=False)
+    role = Column(String(50), default="coach")  # 'admin' or 'coach'
     is_active = Column(Integer, default=1)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
