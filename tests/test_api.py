@@ -205,3 +205,110 @@ class TestStatsEndpoint:
         }
         response = client.post("/stats", json=stats_data)
         assert response.status_code == 404
+
+
+class TestAuthEndpoint:
+    """Tests for the authentication endpoints."""
+
+    def test_register_user(self, client):
+        """Test user registration."""
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "SecurePassword123",
+        }
+        response = client.post("/auth/register", json=user_data)
+        assert response.status_code == 201
+        data = response.json()
+        assert data["username"] == "testuser"
+        assert data["email"] == "test@example.com"
+        assert "password" not in data
+        assert "id" in data
+
+    def test_register_duplicate_username(self, client):
+        """Test registering with duplicate username."""
+        user_data = {
+            "username": "testuser",
+            "email": "test1@example.com",
+            "password": "SecurePassword123",
+        }
+        client.post("/auth/register", json=user_data)
+        
+        # Try to register with same username
+        user_data2 = {
+            "username": "testuser",
+            "email": "test2@example.com",
+            "password": "SecurePassword456",
+        }
+        response = client.post("/auth/register", json=user_data2)
+        assert response.status_code == 400
+        assert "already registered" in response.json()["detail"]
+
+    def test_register_duplicate_email(self, client):
+        """Test registering with duplicate email."""
+        user_data = {
+            "username": "testuser1",
+            "email": "test@example.com",
+            "password": "SecurePassword123",
+        }
+        client.post("/auth/register", json=user_data)
+        
+        # Try to register with same email
+        user_data2 = {
+            "username": "testuser2",
+            "email": "test@example.com",
+            "password": "SecurePassword456",
+        }
+        response = client.post("/auth/register", json=user_data2)
+        assert response.status_code == 400
+        assert "already registered" in response.json()["detail"]
+
+    def test_login_success(self, client):
+        """Test successful login."""
+        # Register user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "SecurePassword123",
+        }
+        client.post("/auth/register", json=user_data)
+        
+        # Login
+        login_data = {
+            "username": "testuser",
+            "password": "SecurePassword123",
+        }
+        response = client.post("/auth/login", json=login_data)
+        assert response.status_code == 200
+        data = response.json()
+        assert "access_token" in data
+        assert data["token_type"] == "bearer"
+
+    def test_login_invalid_password(self, client):
+        """Test login with wrong password."""
+        # Register user first
+        user_data = {
+            "username": "testuser",
+            "email": "test@example.com",
+            "password": "SecurePassword123",
+        }
+        client.post("/auth/register", json=user_data)
+        
+        # Try login with wrong password
+        login_data = {
+            "username": "testuser",
+            "password": "WrongPassword",
+        }
+        response = client.post("/auth/login", json=login_data)
+        assert response.status_code == 401
+        assert "Invalid credentials" in response.json()["detail"]
+
+    def test_login_nonexistent_user(self, client):
+        """Test login with non-existent user."""
+        login_data = {
+            "username": "nonexistent",
+            "password": "SomePassword123",
+        }
+        response = client.post("/auth/login", json=login_data)
+        assert response.status_code == 401
+        assert "Invalid credentials" in response.json()["detail"]
