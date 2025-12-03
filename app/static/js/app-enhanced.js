@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function renderPlayers() {
-        const players = await apiCall(`/players${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}` : ''}`);
+        const players = await apiCall(`/players${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}&limit=50` : '?limit=50'}`);
         
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between mb-8">
@@ -461,7 +461,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button onclick="window.deletePlayer(${player.id})" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
                         </div>
                         <div class="flex items-center gap-4 mb-4 cursor-pointer" onclick="window.viewPlayer(${player.id})">
-                            <img src="${player.photo_url || `https://ui-avatars.com/api/?name=${player.name}&background=random`}" class="w-16 h-16 rounded-full border-2 border-pitch-accent object-cover">
+                            <div class="w-16 h-16 rounded-full border-2 border-pitch-accent bg-pitch-accent/10 flex items-center justify-center">
+                                <i class="fa-solid fa-user text-pitch-accent text-2xl"></i>
+                            </div>
                             <div>
                                 <h3 class="text-xl font-bold text-white">${player.name}</h3>
                                 <p class="text-pitch-accent text-sm">${player.position} #${player.jersey_number || '-'}</p>
