@@ -1149,6 +1149,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = document.getElementById('settings-email').value.trim();
             const password = document.getElementById('settings-password').value;
             const errorDiv = document.getElementById('settings-form-error');
+            const btn = document.querySelector('#settings-form button');
+            const originalText = btn.innerText;
             
             if (!username) {
                 errorDiv.textContent = 'Username is required';
@@ -1158,21 +1160,48 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 errorDiv.classList.add('hidden');
-                // Note: This would need a backend endpoint to update user profile
-                // For now, just update local STATE
-                STATE.user.username = username;
-                STATE.user.email = email;
+                btn.innerText = 'Updating...';
+                btn.disabled = true;
+                
+                // Call backend endpoint to update profile
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${STATE.token}`
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        email: email || null,
+                        password: password || null
+                    })
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to update profile');
+                }
+                
+                const updatedUser = await response.json();
+                
+                // Update local STATE with new data
+                STATE.user.username = updatedUser.username;
+                STATE.user.email = updatedUser.email;
                 localStorage.setItem('user', JSON.stringify(STATE.user));
                 
                 // Update profile display
                 updateProfileDisplay();
                 
                 // Show success and close
-                alert('Settings updated successfully!');
+                alert('Settings updated successfully! Please login again with your new credentials.');
                 window.closeSettingsModal();
+                
             } catch (e) {
                 errorDiv.textContent = e.message || 'Failed to update settings';
                 errorDiv.classList.remove('hidden');
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
             }
         };
     };

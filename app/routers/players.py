@@ -14,9 +14,12 @@ router = APIRouter(prefix="/players", tags=["players"])
 
 
 @router.get("", response_model=List[PlayerResponse])
-def get_players(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """Get all players with pagination."""
-    players = db.query(Player).order_by(Player.id).offset(skip).limit(limit).all()
+def get_players(skip: int = 0, limit: int = 100, team_id: int = None, db: Session = Depends(get_db)):
+    """Get players with optional team filtering and pagination."""
+    query = db.query(Player)
+    if team_id:
+        query = query.filter(Player.team_id == team_id)
+    players = query.order_by(Player.id).offset(skip).limit(limit).all()
     return players
 
 

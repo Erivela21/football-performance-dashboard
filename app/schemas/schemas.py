@@ -33,6 +33,7 @@ class TeamResponse(TeamBase):
     """Schema for team response."""
     
     id: int
+    user_id: int
     created_at: datetime
     updated_at: datetime
     

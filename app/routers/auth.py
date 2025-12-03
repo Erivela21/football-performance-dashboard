@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.models import User
 from app.schemas.schemas import UserCreate, UserResponse, Token
-from app.utils.auth import get_password_hash, verify_password, create_access_token
+from app.utils.auth import get_password_hash, verify_password, create_access_token, get_current_user
 from app.config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -57,3 +57,41 @@ def login(form_data: UserCreate, db: Session = Depends(get_db)):
         # Log the error (in a real app)
         print(f"Login error: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Login error: {str(e)}")
+
+
+@router.put("/me", response_model=UserResponse)
+def update_profile(
+    user_update: UserCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update current user's profile (username, email, password)."""
+    try:
+        # Check if new username already exists (if changing username)
+        if user_update.username != current_user.username:
+            existing = db.query(User).filter(User.username == user_update.username).first()
+            if existing:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+        
+        # Check if new email already exists (if changing email)
+        if user_update.email and user_update.email != current_user.email:
+            existing_email = db.query(User).filter(User.email == user_update.email).first()
+            if existing_email:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+        
+        # Update fields
+        current_user.username = user_update.username
+        if user_update.email:
+            current_user.email = user_update.email
+        if user_update.password:
+            current_user.password_hash = get_password_hash(user_update.password)
+        
+        db.commit()
+        db.refresh(current_user)
+        return current_user
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Profile update error: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Update failed: {str(e)}")
+

@@ -25,6 +25,8 @@ class User(Base):
     is_active = Column(Integer, default=1)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+    
+    teams = relationship("Team", back_populates="user", cascade="all, delete-orphan")
 
 
 class Team(Base):
@@ -33,6 +35,7 @@ class Team(Base):
     __tablename__ = "teams"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     name = Column(String(100), nullable=False)
     division = Column(String(100), nullable=True)
     color_primary = Column(String(7), default="#00ff88")  # Hex color
@@ -40,6 +43,7 @@ class Team(Base):
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
+    user = relationship("User", back_populates="teams")
     players = relationship("Player", back_populates="team_rel", cascade="all, delete-orphan")
 
 

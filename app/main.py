@@ -13,7 +13,7 @@ from app.config import settings
 from app.db.database import engine, Base, get_db
 from app.routers import players, sessions, stats, health, teams, schedule, analytics
 from app.routers import auth
-from app.models.models import User
+from app.models.models import User, Team
 from app.utils.auth import get_password_hash
 
 # Configure logging
@@ -72,8 +72,8 @@ async def lifespan(app: FastAPI):
                     except Exception as e:
                         logger.debug(f"Could not drop photo_url (may not exist): {e}")
                     
-                    # Add columns - ignore if they already exist
-                    migrations = [
+                    # Add player columns - ignore if they already exist
+                    player_migrations = [
                         ("surname", "ALTER TABLE dbo.players ADD surname VARCHAR(100) NULL"),
                         ("aka", "ALTER TABLE dbo.players ADD aka VARCHAR(100) NULL"),
                         ("birth_date", "ALTER TABLE dbo.players ADD birth_date VARCHAR(10) NULL"),
@@ -81,14 +81,22 @@ async def lifespan(app: FastAPI):
                         ("photo_url", "ALTER TABLE dbo.players ADD photo_url TEXT NULL"),
                     ]
                     
-                    for col_name, sql in migrations:
+                    for col_name, sql in player_migrations:
                         try:
-                            logger.info(f"Attempting to add column '{col_name}'...")
+                            logger.info(f"Attempting to add column '{col_name}' to players...")
                             connection.execute(text(sql))
                             logger.info(f"Column '{col_name}' added successfully")
                         except Exception as e:
                             # Column likely already exists, which is fine
                             logger.debug(f"Column '{col_name}' add failed (may already exist): {e}")
+                    
+                    # Add team user_id column
+                    try:
+                        logger.info("Attempting to add column 'user_id' to teams...")
+                        connection.execute(text("ALTER TABLE dbo.teams ADD user_id INT NULL"))
+                        logger.info("Column 'user_id' added to teams")
+                    except Exception as e:
+                        logger.debug(f"Column 'user_id' add failed (may already exist): {e}")
                 
             elif is_sqlite:
                 logger.info("Running SQLite schema migrations...")
@@ -97,7 +105,7 @@ async def lifespan(app: FastAPI):
                     existing_columns = {row[1] for row in cursor.fetchall()}
                     logger.info(f"Existing columns: {existing_columns}")
                     
-                    migrations = [
+                    player_migrations = [
                         ("surname", "ALTER TABLE players ADD COLUMN surname VARCHAR(100) NULL"),
                         ("aka", "ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"),
                         ("birth_date", "ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"),
@@ -105,7 +113,7 @@ async def lifespan(app: FastAPI):
                         ("photo_url", "ALTER TABLE players ADD COLUMN photo_url TEXT NULL"),
                     ]
                     
-                    for col_name, sql in migrations:
+                    for col_name, sql in player_migrations:
                         if col_name not in existing_columns:
                             try:
                                 logger.info(f"Adding column '{col_name}' to SQLite...")
@@ -113,6 +121,17 @@ async def lifespan(app: FastAPI):
                                 logger.info(f"Column '{col_name}' added successfully")
                             except Exception as e:
                                 logger.warning(f"Failed to add column '{col_name}': {e}")
+                    
+                    # Add team user_id column
+                    cursor = connection.execute(text("PRAGMA table_info(teams)"))
+                    team_columns = {row[1] for row in cursor.fetchall()}
+                    if "user_id" not in team_columns:
+                        try:
+                            logger.info("Adding column 'user_id' to SQLite teams...")
+                            connection.execute(text("ALTER TABLE teams ADD COLUMN user_id INTEGER NULL"))
+                            logger.info("Column 'user_id' added to teams")
+                        except Exception as e:
+                            logger.warning(f"Failed to add column 'user_id': {e}")
             
             logger.info("Schema migrations completed")
         except Exception as e:
@@ -134,9 +153,20 @@ async def lifespan(app: FastAPI):
                 logger.info("Demo user created: demo@coach.com / Demo1234")
             else:
                 logger.info("Demo user already exists")
+            
+            # Assign orphaned teams (with NULL user_id) to demo user
+            orphaned_teams = db.query(Team).filter(Team.user_id == None).all()
+            if orphaned_teams:
+                logger.info(f"Found {len(orphaned_teams)} teams without user_id, assigning to demo user...")
+                for team in orphaned_teams:
+                    team.user_id = demo_user.id
+                    db.add(team)
+                db.commit()
+                logger.info(f"Assigned {len(orphaned_teams)} teams to demo user")
+            
             db.close()
         except Exception as e:
-            logger.warning(f"Failed to create demo user: {e}")
+            logger.warning(f"Failed to create/update demo user: {e}")
             
     except Exception as e:
         logger.error(f"Failed to create database tables: {e}")
