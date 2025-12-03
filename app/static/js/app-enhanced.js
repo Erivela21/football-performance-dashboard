@@ -110,7 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
 
-            if (!response.ok) throw new Error('Login failed');
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || `Login failed (${response.status})`);
+            }
 
             const data = await response.json();
             STATE.token = data.access_token;

@@ -42,7 +42,7 @@ class Settings(BaseSettings):
             return (
                 f"mssql+pyodbc://{self.azure_sql_username}:{self.azure_sql_password}"
                 f"@{self.azure_sql_server}/{self.azure_sql_database}"
-                f"?driver={quote_plus(driver)}&Encrypt=yes&TrustServerCertificate=no"
+                f"?driver={quote_plus(driver)}&Encrypt=yes&TrustServerCertificate=yes"
             )
             
         return "sqlite:///./test.db"

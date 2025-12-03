@@ -42,6 +42,13 @@ async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
     # Startup
     try:
+        # Log available ODBC drivers
+        try:
+            import pyodbc
+            logger.info(f"Available ODBC drivers: {pyodbc.drivers()}")
+        except Exception as e:
+            logger.warning(f"Could not list ODBC drivers: {e}")
+
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
