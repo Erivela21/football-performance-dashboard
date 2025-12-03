@@ -64,6 +64,14 @@ async def lifespan(app: FastAPI):
             if is_mssql:
                 logger.info("Running SQL Server schema migrations...")
                 with engine.begin() as connection:
+                    # Try to drop old photo_url column if it's the wrong type (VARCHAR)
+                    try:
+                        logger.info("Attempting to drop old VARCHAR photo_url column...")
+                        connection.execute(text("ALTER TABLE dbo.players DROP COLUMN photo_url"))
+                        logger.info("Old photo_url column dropped")
+                    except Exception as e:
+                        logger.debug(f"Could not drop photo_url (may not exist): {e}")
+                    
                     # Add columns - ignore if they already exist
                     migrations = [
                         ("surname", "ALTER TABLE dbo.players ADD surname VARCHAR(100) NULL"),
