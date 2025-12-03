@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy import text
 
 from app.config import settings
 from app.db.database import engine, Base, get_db
@@ -52,6 +53,23 @@ async def lifespan(app: FastAPI):
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
+        
+        # Schema Migration: Add team_id to players if missing (Fix for Azure SQL)
+        try:
+            if engine.dialect.name == "mssql":
+                with engine.connect() as connection:
+                    connection.execute(text("""
+                        IF EXISTS (SELECT * FROM sys.tables WHERE name = 'players') 
+                        AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'players') AND name = 'team_id')
+                        BEGIN
+                            ALTER TABLE players ADD team_id INT NULL;
+                            ALTER TABLE players WITH CHECK ADD CONSTRAINT FK_players_teams FOREIGN KEY(team_id) REFERENCES teams(id);
+                        END
+                    """))
+                    connection.commit()
+                    logger.info("Schema migration: Checked 'team_id' in 'players' table.")
+        except Exception as e:
+            logger.warning(f"Schema migration warning: {e}")
         
         # Create demo user if not exists
         try:
