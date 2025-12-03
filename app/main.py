@@ -155,7 +155,7 @@ async def lifespan(app: FastAPI):
                 logger.info("Demo user already exists")
             
             # Assign orphaned teams (with NULL user_id) to demo user
-            orphaned_teams = db.query(Team).filter(Team.user_id == None).all()
+            orphaned_teams = db.query(Team).filter(Team.user_id is None).all()
             if orphaned_teams:
                 logger.info(f"Found {len(orphaned_teams)} teams without user_id, assigning to demo user...")
                 for team in orphaned_teams:

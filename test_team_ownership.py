@@ -1,6 +1,4 @@
 """Test team ownership enforcement."""
-import requests
-import json
 from app.db.database import SessionLocal
 from app.models.models import User, Team
 from app.utils.auth import get_password_hash

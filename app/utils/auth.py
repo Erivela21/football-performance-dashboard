@@ -7,7 +7,6 @@ from passlib.context import CryptContext
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer
-from starlette.requests import Request
 from sqlalchemy.orm import Session
 
 from app.config import settings
