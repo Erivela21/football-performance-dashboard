@@ -54,108 +54,61 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
         
-        # Schema Migration: Add missing columns and handle age -> birth_date conversion
+        # Schema Migration: Add missing columns
         try:
             is_sqlite = "sqlite" in str(engine.url).lower()
             is_mssql = engine.dialect.name == "mssql" or "mssql" in str(engine.url)
             
             logger.info(f"Database type - SQLite: {is_sqlite}, MSSQL: {is_mssql}")
-            logger.info(f"Engine URL: {engine.url}")
             
-            if is_sqlite:
-                logger.info("Detected SQLite. Running schema migrations...")
+            if is_mssql:
+                logger.info("Running SQL Server schema migrations...")
                 with engine.begin() as connection:
-                    # Check existing columns
+                    # Add columns - ignore if they already exist
+                    migrations = [
+                        ("surname", "ALTER TABLE dbo.players ADD surname VARCHAR(100) NULL"),
+                        ("aka", "ALTER TABLE dbo.players ADD aka VARCHAR(100) NULL"),
+                        ("birth_date", "ALTER TABLE dbo.players ADD birth_date VARCHAR(10) NULL"),
+                        ("jersey_number", "ALTER TABLE dbo.players ADD jersey_number INT NULL"),
+                        ("photo_url", "ALTER TABLE dbo.players ADD photo_url VARCHAR(500) NULL"),
+                    ]
+                    
+                    for col_name, sql in migrations:
+                        try:
+                            logger.info(f"Attempting to add column '{col_name}'...")
+                            connection.execute(text(sql))
+                            logger.info(f"Column '{col_name}' added successfully")
+                        except Exception as e:
+                            # Column likely already exists, which is fine
+                            logger.debug(f"Column '{col_name}' add failed (may already exist): {e}")
+                
+            elif is_sqlite:
+                logger.info("Running SQLite schema migrations...")
+                with engine.begin() as connection:
                     cursor = connection.execute(text("PRAGMA table_info(players)"))
-                    columns = {row[1] for row in cursor.fetchall()}
-                    logger.info(f"Current columns: {columns}")
+                    existing_columns = {row[1] for row in cursor.fetchall()}
+                    logger.info(f"Existing columns: {existing_columns}")
                     
-                    # Add surname if missing
-                    if 'surname' not in columns:
-                        logger.info("Adding surname column to SQLite...")
-                        connection.execute(text("ALTER TABLE players ADD COLUMN surname VARCHAR(100) NULL"))
-                        logger.info("surname column added successfully")
+                    migrations = [
+                        ("surname", "ALTER TABLE players ADD COLUMN surname VARCHAR(100) NULL"),
+                        ("aka", "ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"),
+                        ("birth_date", "ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"),
+                        ("jersey_number", "ALTER TABLE players ADD COLUMN jersey_number INTEGER NULL"),
+                        ("photo_url", "ALTER TABLE players ADD COLUMN photo_url VARCHAR(500) NULL"),
+                    ]
                     
-                    # Add aka if missing
-                    if 'aka' not in columns:
-                        logger.info("Adding aka column to SQLite...")
-                        connection.execute(text("ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"))
-                        logger.info("aka column added successfully")
-                    
-                    # Add birth_date if missing
-                    if 'birth_date' not in columns:
-                        logger.info("Adding birth_date column to SQLite...")
-                        connection.execute(text("ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"))
-                        logger.info("birth_date column added successfully")
-                    
-                    # Add jersey_number if missing
-                    if 'jersey_number' not in columns:
-                        logger.info("Adding jersey_number column to SQLite...")
-                        connection.execute(text("ALTER TABLE players ADD COLUMN jersey_number INTEGER NULL"))
-                        logger.info("jersey_number column added successfully")
-                    
-                    # Add photo_url if missing
-                    if 'photo_url' not in columns:
-                        logger.info("Adding photo_url column to SQLite...")
-                        connection.execute(text("ALTER TABLE players ADD COLUMN photo_url VARCHAR(500) NULL"))
-                        logger.info("photo_url column added successfully")
-                    
-            elif is_mssql:
-                logger.info("Detected SQL Server. Running schema migrations...")
-                with engine.begin() as connection:
-                    # Add surname column
-                    logger.info("Checking/adding surname column...")
-                    connection.execute(text("""
-                        IF COL_LENGTH('dbo.players', 'surname') IS NULL
-                        BEGIN
-                            ALTER TABLE dbo.players ADD surname VARCHAR(100) NULL;
-                        END
-                    """))
-                    logger.info("surname column checked/added")
-                    
-                    # Add aka column
-                    logger.info("Checking/adding aka column...")
-                    connection.execute(text("""
-                        IF COL_LENGTH('dbo.players', 'aka') IS NULL
-                        BEGIN
-                            ALTER TABLE dbo.players ADD aka VARCHAR(100) NULL;
-                        END
-                    """))
-                    logger.info("aka column checked/added")
-                    
-                    # Add birth_date column
-                    logger.info("Checking/adding birth_date column...")
-                    connection.execute(text("""
-                        IF COL_LENGTH('dbo.players', 'birth_date') IS NULL
-                        BEGIN
-                            ALTER TABLE dbo.players ADD birth_date VARCHAR(10) NULL;
-                        END
-                    """))
-                    logger.info("birth_date column checked/added")
-                    
-                    # Add jersey_number column
-                    logger.info("Checking/adding jersey_number column...")
-                    connection.execute(text("""
-                        IF COL_LENGTH('dbo.players', 'jersey_number') IS NULL
-                        BEGIN
-                            ALTER TABLE dbo.players ADD jersey_number INT NULL;
-                        END
-                    """))
-                    logger.info("jersey_number column checked/added")
-                    
-                    # Add photo_url column
-                    logger.info("Checking/adding photo_url column...")
-                    connection.execute(text("""
-                        IF COL_LENGTH('dbo.players', 'photo_url') IS NULL
-                        BEGIN
-                            ALTER TABLE dbo.players ADD photo_url VARCHAR(500) NULL;
-                        END
-                    """))
-                    logger.info("photo_url column checked/added")
+                    for col_name, sql in migrations:
+                        if col_name not in existing_columns:
+                            try:
+                                logger.info(f"Adding column '{col_name}' to SQLite...")
+                                connection.execute(text(sql))
+                                logger.info(f"Column '{col_name}' added successfully")
+                            except Exception as e:
+                                logger.warning(f"Failed to add column '{col_name}': {e}")
             
-            logger.info("Schema migrations completed successfully")
+            logger.info("Schema migrations completed")
         except Exception as e:
-            logger.error(f"Schema migration failed: {e}", exc_info=True)
+            logger.error(f"Schema migration error: {e}", exc_info=True)
         
         # Create demo user if not exists
         try:
