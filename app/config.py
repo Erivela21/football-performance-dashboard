@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     app_name: str = "Football Performance Dashboard"
     debug: bool = False
 
+    # Security / Auth
+    secret_key: str = "change-me-in-production"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24  # 1 day
+
     # CORS settings (comma-separated list of allowed origins)
     cors_allowed_origins: str = ""
 

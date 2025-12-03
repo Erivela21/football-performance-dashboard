@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from app.config import settings
 from app.db.database import engine, Base
 from app.routers import players, sessions, stats, health
+from app.routers import auth
 
 # Configure logging
 logging.basicConfig(
@@ -79,6 +80,7 @@ app.include_router(health.router)
 app.include_router(players.router)
 app.include_router(sessions.router)
 app.include_router(stats.router)
+app.include_router(auth.router)
 
 
 @app.get("/")
