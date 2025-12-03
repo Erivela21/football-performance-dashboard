@@ -38,6 +38,45 @@ document.addEventListener('DOMContentLoaded', () => {
         // Login
         els.loginForm.addEventListener('submit', handleLogin);
 
+        // Registration Modal
+        const registerModal = document.getElementById('register-modal');
+        const registerLink = document.getElementById('register-link');
+        const loginLink = document.getElementById('login-link');
+        const closeRegisterBtn = document.getElementById('close-register');
+        const registerForm = document.getElementById('register-form');
+
+        if (registerLink) {
+            registerLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                registerModal.classList.remove('hidden');
+            });
+        }
+
+        if (loginLink) {
+            loginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                registerModal.classList.add('hidden');
+            });
+        }
+
+        if (closeRegisterBtn) {
+            closeRegisterBtn.addEventListener('click', () => {
+                registerModal.classList.add('hidden');
+            });
+        }
+
+        if (registerModal) {
+            registerModal.addEventListener('click', (e) => {
+                if (e.target === registerModal) {
+                    registerModal.classList.add('hidden');
+                }
+            });
+        }
+
+        if (registerForm) {
+            registerForm.addEventListener('submit', handleRegister);
+        }
+
         // Navigation
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', (e) => {
@@ -130,6 +169,65 @@ document.addEventListener('DOMContentLoaded', () => {
             errorDiv.textContent = error.message || 'An error occurred during login';
             errorDiv.classList.remove('hidden');
         } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        const registerForm = document.getElementById('register-form');
+        const usernameInput = registerForm.querySelector('input#reg-username');
+        const emailInput = registerForm.querySelector('input#reg-email');
+        const passwordInput = registerForm.querySelector('input#reg-password');
+        const btn = registerForm.querySelector('button');
+        const errorDiv = document.getElementById('register-error');
+        const successDiv = document.getElementById('register-success');
+        const registerModal = document.getElementById('register-modal');
+
+        const username = usernameInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        const originalText = btn.innerText;
+        btn.innerText = 'Creating Account...';
+        btn.disabled = true;
+        errorDiv.classList.add('hidden');
+        successDiv.classList.add('hidden');
+
+        try {
+            const response = await fetch(`${API_BASE}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                let msg = errData.detail || 'Registration failed';
+                if (typeof msg === 'object') {
+                    msg = JSON.stringify(msg);
+                }
+                throw new Error(msg);
+            }
+
+            successDiv.textContent = 'Account created successfully! Redirecting to login...';
+            successDiv.classList.remove('hidden');
+            registerForm.reset();
+
+            setTimeout(() => {
+                registerModal.classList.add('hidden');
+                document.getElementById('username').focus();
+            }, 2000);
+
+        } catch (error) {
+            console.error('Registration error:', error);
+            errorDiv.textContent = error.message || 'An error occurred during registration';
+            errorDiv.classList.remove('hidden');
             btn.innerText = originalText;
             btn.disabled = false;
         }
