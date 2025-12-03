@@ -137,8 +137,7 @@ def unassign_team_from_coach(
             detail="Team not found"
         )
     
-    old_coach_id = team.user_id
-    # For now, we'll delete the team since user_id is NOT NULL
+    # Delete the team since user_id is NOT NULL
     # Alternatively, could move to a shared/unassigned teams pool
     db.delete(team)
     db.commit()
