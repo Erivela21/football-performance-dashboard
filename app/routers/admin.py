@@ -22,6 +22,45 @@ def verify_admin(current_user: User = Depends(get_current_user)):
     return current_user
 
 
+@router.post("/coaches", response_model=UserResponse)
+def create_coach(
+    username: str,
+    email: str,
+    password: str,
+    admin: User = Depends(verify_admin),
+    db: Session = Depends(get_db)
+):
+    """Create a new coach account. Admin only."""
+    # Check if username already exists
+    existing_user = db.query(User).filter(User.username == username).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists"
+        )
+    
+    # Check if email already exists
+    existing_email = db.query(User).filter(User.email == email).first()
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already exists"
+        )
+    
+    # Create new coach
+    new_coach = User(
+        username=username,
+        email=email,
+        password_hash=get_password_hash(password),
+        role="coach",
+        is_active=1
+    )
+    db.add(new_coach)
+    db.commit()
+    db.refresh(new_coach)
+    return new_coach
+
+
 @router.get("/coaches", response_model=List[CoachListResponse])
 def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_db)):
     """List all coaches with their teams."""
