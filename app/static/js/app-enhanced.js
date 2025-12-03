@@ -189,8 +189,16 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error('Unauthorized');
         }
         if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || 'API Error');
+            let errMsg = 'API Error';
+            try {
+                const err = await res.json();
+                errMsg = err.detail || errMsg;
+            } catch (e) {
+                // If JSON parse fails, try text
+                const text = await res.text();
+                errMsg = text || `API Error (${res.status})`;
+            }
+            throw new Error(errMsg);
         }
         return res.json();
     }

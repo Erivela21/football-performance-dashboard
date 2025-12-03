@@ -210,8 +210,12 @@ def get_insights(
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
     # Get all relevant data
+    # Explicitly select columns to avoid GROUP BY issues on strict SQL modes
     query = db.query(
-        Player,
+        Player.id,
+        Player.name,
+        Player.age,
+        Player.team_id,
         func.count(TrainingSession.id).label('session_count'),
         func.sum(TrainingSession.duration_minutes).label('total_minutes'),
         func.avg(SessionStats.distance_km).label('avg_distance'),
@@ -228,7 +232,7 @@ def get_insights(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id).all()
+    results = query.group_by(Player.id, Player.name, Player.age, Player.team_id).all()
     
     insights = {
         "recovery_recommendations": [],
@@ -242,7 +246,9 @@ def get_insights(
     optimal_load = 0
     
     for result in results:
-        player = result.Player
+        # result is a Row object, access by attribute name
+        player_name = result.name
+        player_age = result.age
         total_mins = result.total_minutes or 0
         avg_hr = result.avg_hr or 0
         
@@ -250,14 +256,14 @@ def get_insights(
         if total_mins > 1200:  # High volume
             needs_recovery += 1
             insights["recovery_recommendations"].append({
-                "player_name": player.name,
+                "player_name": player_name,
                 "reason": "High training volume detected",
                 "action": "Schedule 2 rest days this week",
                 "priority": "high"
             })
         elif avg_hr > 165:
             insights["recovery_recommendations"].append({
-                "player_name": player.name,
+                "player_name": player_name,
                 "reason": "Elevated average heart rate",
                 "action": "Focus on low-intensity recovery sessions",
                 "priority": "medium"
@@ -266,9 +272,9 @@ def get_insights(
             optimal_load += 1
         
         # Injury prevention
-        if player.age and player.age > 30 and total_mins > 1000:
+        if player_age and player_age > 30 and total_mins > 1000:
             insights["injury_prevention"].append({
-                "player_name": player.name,
+                "player_name": player_name,
                 "risk_factor": "Age + High workload combination",
                 "prevention": "Implement additional stretching and mobility work",
                 "priority": "high"
@@ -277,7 +283,7 @@ def get_insights(
         # Workload optimization
         if total_mins < 400:  # Low volume
             insights["workload_optimization"].append({
-                "player_name": player.name,
+                "player_name": player_name,
                 "current_load": "Below optimal",
                 "recommendation": "Gradually increase training volume by 10-15%",
                 "target_minutes": 600
