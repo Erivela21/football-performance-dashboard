@@ -64,7 +64,7 @@ class TestHealthEndpoint:
             "name": "John Doe",
             "position": "Forward",
             "team": "Test FC",
-            "age": 25,
+            "birth_date": "2000-12-03",
         }
         response = client.post("/players", json=player_data)
         assert response.status_code == 201
