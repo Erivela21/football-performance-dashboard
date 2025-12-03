@@ -2,7 +2,6 @@
 
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
-from sqlalchemy.dialects.mssql import DATETIME2
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
