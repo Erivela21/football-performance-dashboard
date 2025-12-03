@@ -59,115 +59,69 @@ async def lifespan(app: FastAPI):
             is_sqlite = "sqlite" in str(engine.url).lower()
             is_mssql = engine.dialect.name == "mssql" or "mssql" in str(engine.url)
             
-            with engine.connect() as connection:
-                # IMPORTANT: Run migrations for all databases
-                if is_sqlite:
-                    logger.info("Detected SQLite. Running schema migrations...")
-                    
+            logger.info(f"Database type - SQLite: {is_sqlite}, MSSQL: {is_mssql}")
+            logger.info(f"Engine URL: {engine.url}")
+            
+            if is_sqlite:
+                logger.info("Detected SQLite. Running schema migrations...")
+                with engine.begin() as connection:
                     # Check existing columns
                     cursor = connection.execute(text("PRAGMA table_info(players)"))
                     columns = {row[1] for row in cursor.fetchall()}
+                    logger.info(f"Current columns: {columns}")
                     
                     # Add surname if missing
                     if 'surname' not in columns:
-                        logger.info("Adding surname column...")
-                        try:
-                            connection.execute(text("ALTER TABLE players ADD COLUMN surname VARCHAR(100) NULL"))
-                            connection.commit()
-                            logger.info("surname column added")
-                        except Exception as e:
-                            logger.warning(f"surname column may already exist: {e}")
+                        logger.info("Adding surname column to SQLite...")
+                        connection.execute(text("ALTER TABLE players ADD COLUMN surname VARCHAR(100) NULL"))
+                        logger.info("surname column added successfully")
                     
                     # Add aka if missing
                     if 'aka' not in columns:
-                        logger.info("Adding aka column...")
-                        try:
-                            connection.execute(text("ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"))
-                            connection.commit()
-                            logger.info("aka column added")
-                        except Exception as e:
-                            logger.warning(f"aka column may already exist: {e}")
+                        logger.info("Adding aka column to SQLite...")
+                        connection.execute(text("ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"))
+                        logger.info("aka column added successfully")
                     
                     # Add birth_date if missing
                     if 'birth_date' not in columns:
-                        logger.info("Adding birth_date column...")
-                        try:
-                            connection.execute(text("ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"))
-                            connection.commit()
-                            logger.info("birth_date column added")
-                        except Exception as e:
-                            logger.warning(f"birth_date column may already exist: {e}")
+                        logger.info("Adding birth_date column to SQLite...")
+                        connection.execute(text("ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"))
+                        logger.info("birth_date column added successfully")
                     
-                    # Remove age column if it exists
-                    if 'age' in columns:
-                        logger.info("Dropping age column...")
-                        try:
-                            connection.execute(text("ALTER TABLE players DROP COLUMN age"))
-                            connection.commit()
-                            logger.info("age column dropped")
-                        except Exception as e:
-                            logger.warning(f"Could not drop age column: {e}")
+            elif is_mssql:
+                logger.info("Detected SQL Server. Running schema migrations...")
+                with engine.begin() as connection:
+                    # Add surname column
+                    logger.info("Checking/adding surname column...")
+                    connection.execute(text("""
+                        IF COL_LENGTH('dbo.players', 'surname') IS NULL
+                        BEGIN
+                            ALTER TABLE dbo.players ADD surname VARCHAR(100) NULL;
+                        END
+                    """))
+                    logger.info("surname column checked/added")
                     
-                elif is_mssql:
-                    logger.info("Detected SQL Server. Running schema migrations...")
+                    # Add aka column
+                    logger.info("Checking/adding aka column...")
+                    connection.execute(text("""
+                        IF COL_LENGTH('dbo.players', 'aka') IS NULL
+                        BEGIN
+                            ALTER TABLE dbo.players ADD aka VARCHAR(100) NULL;
+                        END
+                    """))
+                    logger.info("aka column checked/added")
                     
-                    # Add surname column if it doesn't exist
-                    try:
-                        connection.execute(text("""
-                            IF COL_LENGTH('players', 'surname') IS NULL
-                            BEGIN
-                                ALTER TABLE players ADD surname VARCHAR(100) NULL;
-                                PRINT 'Added surname column';
-                            END
-                        """))
-                        connection.commit()
-                        logger.info("surname column checked/added")
-                    except Exception as e:
-                        logger.warning(f"Issue with surname column: {e}")
-                    
-                    # Add aka column if it doesn't exist
-                    try:
-                        connection.execute(text("""
-                            IF COL_LENGTH('players', 'aka') IS NULL
-                            BEGIN
-                                ALTER TABLE players ADD aka VARCHAR(100) NULL;
-                                PRINT 'Added aka column';
-                            END
-                        """))
-                        connection.commit()
-                        logger.info("aka column checked/added")
-                    except Exception as e:
-                        logger.warning(f"Issue with aka column: {e}")
-                    
-                    # Add birth_date column if it doesn't exist
-                    try:
-                        connection.execute(text("""
-                            IF COL_LENGTH('players', 'birth_date') IS NULL
-                            BEGIN
-                                ALTER TABLE players ADD birth_date VARCHAR(10) NULL;
-                                PRINT 'Added birth_date column';
-                            END
-                        """))
-                        connection.commit()
-                        logger.info("birth_date column checked/added")
-                    except Exception as e:
-                        logger.warning(f"Issue with birth_date column: {e}")
-                    
-                    # Drop age column if it exists
-                    try:
-                        connection.execute(text("""
-                            IF COL_LENGTH('players', 'age') IS NOT NULL
-                            BEGIN
-                                ALTER TABLE players DROP COLUMN age;
-                                PRINT 'Dropped age column';
-                            END
-                        """))
-                        connection.commit()
-                        logger.info("age column checked/dropped")
-                    except Exception as e:
-                        logger.warning(f"Issue dropping age column: {e}")
-                
-                logger.info("Schema migrations completed successfully")
+                    # Add birth_date column
+                    logger.info("Checking/adding birth_date column...")
+                    connection.execute(text("""
+                        IF COL_LENGTH('dbo.players', 'birth_date') IS NULL
+                        BEGIN
+                            ALTER TABLE dbo.players ADD birth_date VARCHAR(10) NULL;
+                        END
+                    """))
+                    logger.info("birth_date column checked/added")
+            
+            logger.info("Schema migrations completed successfully")
         except Exception as e:
             logger.error(f"Schema migration failed: {e}", exc_info=True)
         
