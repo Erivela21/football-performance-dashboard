@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
         players: [],
         periodDays: 7
     };
+    
+    // API Response caching
+    const CACHE = {
+        data: new Map(),
+        ttl: 30000 // 30 seconds
+    };
 
     // --- DOM Elements ---
     const els = {
@@ -271,6 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- API Helper ---
     async function apiCall(endpoint, method = 'GET', body = null) {
+        // Check cache for GET requests
+        if (method === 'GET') {
+            const cached = CACHE.data.get(endpoint);
+            if (cached && Date.now() - cached.timestamp < CACHE.ttl) {
+                return cached.data;
+            }
+        }
+        
         const headers = {
             'Authorization': `Bearer ${STATE.token}`,
             'Content-Type': 'application/json'
@@ -299,10 +313,44 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Handle 204 No Content (successful deletion)
         if (res.status === 204 || res.status === 204) {
+            // Clear related caches after DELETE/POST/PUT
+            clearRelatedCache(endpoint, method);
             return null;
         }
         
-        return res.json();
+        const data = await res.json();
+        
+        // Cache GET responses
+        if (method === 'GET') {
+            CACHE.data.set(endpoint, { data, timestamp: Date.now() });
+        } else {
+            // Clear related caches after mutations (POST, PUT, PATCH)
+            clearRelatedCache(endpoint, method);
+        }
+        
+        return data;
+    }
+    
+    function clearRelatedCache(endpoint, method) {
+        if (method === 'GET') return;
+        
+        // Clear caches that might be affected by this mutation
+        if (endpoint.includes('/players')) {
+            CACHE.data.delete('/players');
+            // Also clear team-specific player caches
+            STATE.teams.forEach(team => {
+                CACHE.data.delete(`/players?team_id=${team.id}&limit=50`);
+                CACHE.data.delete(`/players?team_id=${team.id}`);
+            });
+        }
+        if (endpoint.includes('/analytics')) {
+            CACHE.data.delete('/analytics/training-load');
+            CACHE.data.delete('/analytics/injury-risk');
+            CACHE.data.delete('/analytics/insights');
+        }
+        if (endpoint.includes('/teams')) {
+            CACHE.data.delete('/teams');
+        }
     }
 
     // --- Navigation & Routing ---
@@ -462,8 +510,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button onclick="window.deletePlayer(${player.id})" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
                         </div>
                         <div class="flex items-center gap-4 mb-4 cursor-pointer" onclick="window.viewPlayer(${player.id})">
-                            <div class="w-16 h-16 rounded-full border-2 border-pitch-accent bg-pitch-accent/10 flex items-center justify-center">
-                                <i class="fa-solid fa-user text-pitch-accent text-2xl"></i>
+                            <div class="w-16 h-16 rounded-full border-2 border-pitch-accent bg-pitch-accent/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                ${player.photo_url ? `<img src="${player.photo_url}" alt="${player.name}" class="w-full h-full object-cover" loading="lazy">` : `<i class="fa-solid fa-user text-pitch-accent text-2xl"></i>`}
                             </div>
                             <div>
                                 <h3 class="text-xl font-bold text-white">${player.name}</h3>
@@ -484,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <!-- Hover Popup (Simple implementation via group-hover) -->
                         <div class="absolute left-0 bottom-full mb-2 w-full p-4 glass-panel rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-20">
                             <div class="flex items-center gap-3 mb-2">
-                                <img src="${player.photo_url || `https://ui-avatars.com/api/?name=${player.name}&background=random`}" class="w-10 h-10 rounded-full">
+                                <img src="${player.photo_url || `https://ui-avatars.com/api/?name=${player.name}&background=random`}" alt="${player.name}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" loading="lazy">
                                 <div>
                                     <p class="font-bold text-white">${player.name}</p>
                                     <p class="text-xs text-gray-400">Click for details</p>
@@ -1080,8 +1128,8 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.save("performance-report.pdf");
     }
 
-    // Settings functions
-    async function openSettingsModal() {
+    // Settings functions - exposed globally
+    window.openSettingsModal = async function() {
         const modal = document.getElementById('settings-modal');
         modal.classList.remove('hidden');
         
@@ -1115,22 +1163,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('user', JSON.stringify(STATE.user));
                 
                 // Update profile display
-                document.getElementById('profile-name').textContent = `Coach ${username}`;
-                document.getElementById('profile-avatar').src = `https://ui-avatars.com/api/?name=${username}&background=00ff88&color=0a0f1c`;
+                updateProfileDisplay();
                 
                 // Show success and close
                 alert('Settings updated successfully!');
-                closeSettingsModal();
+                window.closeSettingsModal();
             } catch (e) {
                 errorDiv.textContent = e.message || 'Failed to update settings';
                 errorDiv.classList.remove('hidden');
             }
         };
-    }
+    };
 
-    function closeSettingsModal() {
+    window.closeSettingsModal = function() {
         document.getElementById('settings-modal').classList.add('hidden');
-    }
+    };
 
     // Initialize profile display on page load
     function updateProfileDisplay() {
