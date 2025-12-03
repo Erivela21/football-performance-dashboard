@@ -42,7 +42,7 @@ def get_training_load(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id).all()
+    results = query.group_by(Player.id, Player.name, Player.position, Player.photo_url).all()
     
     players_load = []
     for result in results:
@@ -120,7 +120,7 @@ def get_injury_risk(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id).all()
+    results = query.group_by(Player.id, Player.name, Player.position, Player.birth_date, Player.photo_url).all()
     
     injury_risks = []
     for result in results:

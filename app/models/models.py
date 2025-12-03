@@ -57,7 +57,7 @@ class Player(Base):
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     birth_date = Column(String(10), nullable=True)  # YYYY-MM-DD format
     jersey_number = Column(Integer, nullable=True)
-    photo_url = Column(String(500), nullable=True)
+    photo_url = Column(Text, nullable=True)  # Can store large base64 images
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 

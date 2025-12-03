@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
                         ("aka", "ALTER TABLE dbo.players ADD aka VARCHAR(100) NULL"),
                         ("birth_date", "ALTER TABLE dbo.players ADD birth_date VARCHAR(10) NULL"),
                         ("jersey_number", "ALTER TABLE dbo.players ADD jersey_number INT NULL"),
-                        ("photo_url", "ALTER TABLE dbo.players ADD photo_url VARCHAR(500) NULL"),
+                        ("photo_url", "ALTER TABLE dbo.players ADD photo_url TEXT NULL"),
                     ]
                     
                     for col_name, sql in migrations:
@@ -94,7 +94,7 @@ async def lifespan(app: FastAPI):
                         ("aka", "ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"),
                         ("birth_date", "ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"),
                         ("jersey_number", "ALTER TABLE players ADD COLUMN jersey_number INTEGER NULL"),
-                        ("photo_url", "ALTER TABLE players ADD COLUMN photo_url VARCHAR(500) NULL"),
+                        ("photo_url", "ALTER TABLE players ADD COLUMN photo_url TEXT NULL"),
                     ]
                     
                     for col_name, sql in migrations:
