@@ -260,13 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             </div>
 
-            <!-- Animation Container -->
-            <div class="glass-panel rounded-2xl p-1 h-64 relative overflow-hidden mb-6">
-                <canvas id="heroCanvas" class="w-full h-full"></canvas>
-                <div class="absolute top-4 left-6">
-                    <h3 class="text-xl font-bold text-white">Live Simulation</h3>
-                    <p class="text-sm text-gray-400">Biomechanical Analysis</p>
-                </div>
+            <!-- Welcome Banner -->
+            <div class="glass-panel rounded-2xl p-8 mb-6 bg-gradient-to-r from-pitch-dark to-pitch-accent/10 border border-pitch-accent/20">
+                <h3 class="text-2xl font-bold text-white mb-2">Performance Overview</h3>
+                <p class="text-gray-400">Track your team's physical condition and match readiness in real-time.</p>
             </div>
 
             <!-- Stats Grid -->
@@ -334,9 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // Initialize Animation
-        initStickFigureAnimation();
-        
         // Expose functions globally for onclick handlers
         window.navigateTo = navigateTo;
         window.exportReport = exportReport;
@@ -728,95 +722,6 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.save("performance-report.pdf");
     }
 
-    // --- Animation ---
-    function initStickFigureAnimation() {
-        const canvas = document.getElementById('heroCanvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        
-        // Resize canvas
-        const resize = () => {
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-        };
-        window.addEventListener('resize', resize);
-        resize();
-
-        let frame = 0;
-        
-        function drawStickFigure(x, y, phase) {
-            ctx.strokeStyle = '#00ff88';
-            ctx.lineWidth = 2;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            // Nodes
-            const head = {x: x, y: y - 40};
-            const neck = {x: x, y: y - 25};
-            const hip = {x: x, y: y + 10};
-            
-            // Dynamic limb positions based on phase
-            const legL = {x: x - 10 + Math.sin(phase)*20, y: y + 50};
-            const legR = {x: x + 10 - Math.sin(phase)*20, y: y + 50};
-            const armL = {x: x - 15 + Math.cos(phase)*15, y: y - 10};
-            const armR = {x: x + 15 - Math.cos(phase)*15, y: y - 10};
-
-            ctx.beginPath();
-            // Body
-            ctx.moveTo(head.x, head.y + 10); // Neck start
-            ctx.lineTo(hip.x, hip.y);
-            // Legs
-            ctx.moveTo(hip.x, hip.y);
-            ctx.lineTo(legL.x, legL.y);
-            ctx.moveTo(hip.x, hip.y);
-            ctx.lineTo(legR.x, legR.y);
-            // Arms
-            ctx.moveTo(neck.x, neck.y);
-            ctx.lineTo(armL.x, armL.y);
-            ctx.moveTo(neck.x, neck.y);
-            ctx.lineTo(armR.x, armR.y);
-            ctx.stroke();
-
-            // Head
-            ctx.beginPath();
-            ctx.arc(head.x, head.y, 8, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Nodes (Joints)
-            ctx.fillStyle = '#fff';
-            [head, neck, hip, legL, legR, armL, armR].forEach(p => {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        function animate() {
-            if (!document.getElementById('heroCanvas')) return; // Stop if navigated away
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw Ball
-            const ballX = canvas.width/2 + Math.sin(frame/20) * 100;
-            const ballY = canvas.height/2 + 40;
-            
-            ctx.beginPath();
-            ctx.arc(ballX, ballY, 10, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff';
-            ctx.fill();
-
-            // Draw Player
-            drawStickFigure(canvas.width/2, canvas.height/2, frame/10);
-
-            frame++;
-            if (frame < 120) { // Stop after 2 seconds (approx 120 frames)
-                requestAnimationFrame(animate);
-            } else {
-                // Reset after a pause
-                setTimeout(() => { frame = 0; animate(); }, 2000);
-            }
-        }
-        
-        animate();
+        doc.save("performance-report.pdf");
     }
 });

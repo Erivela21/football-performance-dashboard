@@ -14,7 +14,7 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 @router.get("", response_model=List[TeamResponse])
 def get_teams(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """Get all teams with pagination."""
-    teams = db.query(Team).offset(skip).limit(limit).all()
+    teams = db.query(Team).order_by(Team.id).offset(skip).limit(limit).all()
     return teams
 
 
