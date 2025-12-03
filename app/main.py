@@ -9,9 +9,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from app.config import settings
-from app.db.database import engine, Base
-from app.routers import players, sessions, stats, health
+from app.db.database import engine, Base, get_db
+from app.routers import players, sessions, stats, health, teams, schedule, analytics
 from app.routers import auth
+from app.models.models import User
+from app.utils.auth import get_password_hash
 
 # Configure logging
 logging.basicConfig(
@@ -43,6 +45,27 @@ async def lifespan(app: FastAPI):
         logger.info("Creating database tables...")
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
+        
+        # Create demo user if not exists
+        try:
+            db = next(get_db())
+            demo_user = db.query(User).filter(User.email == "demo@coach.com").first()
+            if not demo_user:
+                demo_user = User(
+                    username="demo",
+                    email="demo@coach.com",
+                    password_hash=get_password_hash("Demo123"),
+                    is_active=1
+                )
+                db.add(demo_user)
+                db.commit()
+                logger.info("Demo user created: demo@coach.com / Demo123")
+            else:
+                logger.info("Demo user already exists")
+            db.close()
+        except Exception as e:
+            logger.warning(f"Failed to create demo user: {e}")
+            
     except Exception as e:
         logger.error(f"Failed to create database tables: {e}")
         logger.info("App will continue without database initialization")
@@ -77,10 +100,13 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Include routers
 app.include_router(health.router)
+app.include_router(auth.router)
+app.include_router(teams.router)
 app.include_router(players.router)
 app.include_router(sessions.router)
 app.include_router(stats.router)
-app.include_router(auth.router)
+app.include_router(schedule.router)
+app.include_router(analytics.router)
 
 
 @app.get("/")

@@ -1,7 +1,7 @@
 """SQLAlchemy models for the Football Performance Dashboard."""
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
 
 from app.db.database import Base
@@ -12,6 +12,36 @@ def utc_now():
     return datetime.now(timezone.utc)
 
 
+class User(Base):
+    """User model for authentication and application access."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(150), unique=True, nullable=False, index=True)
+    email = Column(String(254), unique=True, nullable=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+    is_active = Column(Integer, default=1)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class Team(Base):
+    """Team model representing a football team."""
+
+    __tablename__ = "teams"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    division = Column(String(100), nullable=True)
+    color_primary = Column(String(7), default="#00ff88")  # Hex color
+    color_secondary = Column(String(7), default="#00ccff")  # Hex color
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    players = relationship("Player", back_populates="team_rel", cascade="all, delete-orphan")
+
+
 class Player(Base):
     """Player model representing a football athlete."""
 
@@ -20,12 +50,16 @@ class Player(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     position = Column(String(50), nullable=False)
-    team = Column(String(100), nullable=True)
+    team = Column(String(100), nullable=True)  # Keep for backward compatibility
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     age = Column(Integer, nullable=True)
+    jersey_number = Column(Integer, nullable=True)
+    photo_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
-    sessions = relationship("TrainingSession", back_populates="player")
+    sessions = relationship("TrainingSession", back_populates="player", cascade="all, delete-orphan")
+    team_rel = relationship("Team", back_populates="players")
 
 
 class TrainingSession(Base):
@@ -42,7 +76,7 @@ class TrainingSession(Base):
     created_at = Column(DateTime, default=utc_now)
 
     player = relationship("Player", back_populates="sessions")
-    stats = relationship("SessionStats", back_populates="session")
+    stats = relationship("SessionStats", back_populates="session", cascade="all, delete-orphan")
 
 
 class SessionStats(Base):
@@ -63,15 +97,18 @@ class SessionStats(Base):
     session = relationship("TrainingSession", back_populates="stats")
 
 
-class User(Base):
-    """User model for authentication and application access."""
+class MatchSchedule(Base):
+    """Match and training schedule for teams."""
 
-    __tablename__ = "users"
+    __tablename__ = "match_schedule"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(150), unique=True, nullable=False, index=True)
-    email = Column(String(254), unique=True, nullable=True, index=True)
-    password_hash = Column(String(255), nullable=False)
-    is_active = Column(Integer, default=1)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    event_type = Column(String(50), nullable=False)  # 'match', 'training', 'important_match'
+    title = Column(String(200), nullable=False)
+    opponent = Column(String(100), nullable=True)
+    event_date = Column(DateTime, nullable=False)
+    location = Column(String(200), nullable=True)
+    notes = Column(Text, nullable=True)
+    is_important = Column(Boolean, default=False)
     created_at = Column(DateTime, default=utc_now)
-    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)

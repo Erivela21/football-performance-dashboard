@@ -5,6 +5,40 @@ from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 
+# Team schemas
+class TeamBase(BaseModel):
+    """Base schema for team data."""
+    
+    name: str = Field(..., min_length=1, max_length=100)
+    division: Optional[str] = Field(None, max_length=100)
+    color_primary: Optional[str] = Field("#00ff88", max_length=7)
+    color_secondary: Optional[str] = Field("#00ccff", max_length=7)
+
+
+class TeamCreate(TeamBase):
+    """Schema for creating a new team."""
+    pass
+
+
+class TeamUpdate(BaseModel):
+    """Schema for updating a team."""
+    
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    division: Optional[str] = Field(None, max_length=100)
+    color_primary: Optional[str] = Field(None, max_length=7)
+    color_secondary: Optional[str] = Field(None, max_length=7)
+
+
+class TeamResponse(TeamBase):
+    """Schema for team response."""
+    
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
 # Player schemas
 class PlayerBase(BaseModel):
     """Base schema for player data."""
@@ -12,7 +46,10 @@ class PlayerBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     position: str = Field(..., min_length=1, max_length=50)
     team: Optional[str] = Field(None, max_length=100)
+    team_id: Optional[int] = None
     age: Optional[int] = Field(None, ge=15, le=50)
+    jersey_number: Optional[int] = Field(None, ge=1, le=99)
+    photo_url: Optional[str] = Field(None, max_length=500)
 
 
 class PlayerCreate(PlayerBase):
@@ -143,3 +180,44 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+
+# Match Schedule schemas
+class MatchScheduleBase(BaseModel):
+    """Base schema for match schedule data."""
+    
+    team_id: Optional[int] = None
+    event_type: str = Field(..., min_length=1, max_length=50)
+    title: str = Field(..., min_length=1, max_length=200)
+    opponent: Optional[str] = Field(None, max_length=100)
+    event_date: datetime
+    location: Optional[str] = Field(None, max_length=200)
+    notes: Optional[str] = None
+    is_important: bool = False
+
+
+class MatchScheduleCreate(MatchScheduleBase):
+    """Schema for creating a new match schedule."""
+    pass
+
+
+class MatchScheduleUpdate(BaseModel):
+    """Schema for updating a match schedule."""
+    
+    team_id: Optional[int] = None
+    event_type: Optional[str] = Field(None, min_length=1, max_length=50)
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    opponent: Optional[str] = Field(None, max_length=100)
+    event_date: Optional[datetime] = None
+    location: Optional[str] = Field(None, max_length=200)
+    notes: Optional[str] = None
+    is_important: Optional[bool] = None
+
+
+class MatchScheduleResponse(MatchScheduleBase):
+    """Schema for match schedule response."""
+    
+    id: int
+    created_at: datetime
+    
+    model_config = ConfigDict(from_attributes=True)
