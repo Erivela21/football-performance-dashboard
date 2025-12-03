@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Registration Modal Handling ---
     registerLink.addEventListener('click', (e) => {
         e.preventDefault();
+        console.log('Register link clicked');
         registerModal.classList.remove('hidden');
     });
 
