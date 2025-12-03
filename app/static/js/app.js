@@ -5,11 +5,94 @@ document.addEventListener('DOMContentLoaded', () => {
     const authOverlay = document.getElementById('auth-overlay');
     const appLayout = document.getElementById('app-layout');
     const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const registerModal = document.getElementById('register-modal');
+    const registerLink = document.getElementById('register-link');
+    const loginLink = document.getElementById('login-link');
+    const closeRegisterBtn = document.getElementById('close-register');
     const navItems = document.querySelectorAll('.nav-item');
     const pageContent = document.getElementById('page-content');
 
     // Current page state
     let currentPage = 'home';
+
+    // --- Registration Modal Handling ---
+    registerLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        registerModal.classList.remove('hidden');
+    });
+
+    loginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        registerModal.classList.add('hidden');
+    });
+
+    closeRegisterBtn.addEventListener('click', () => {
+        registerModal.classList.add('hidden');
+    });
+
+    registerModal.addEventListener('click', (e) => {
+        if (e.target === registerModal) {
+            registerModal.classList.add('hidden');
+        }
+    });
+
+    // --- Registration Form Handling ---
+    registerForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('reg-username').value;
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-password').value;
+        const btn = registerForm.querySelector('button');
+        const errorDiv = document.getElementById('register-error');
+        const successDiv = document.getElementById('register-success');
+        const originalText = btn.innerText;
+
+        btn.innerText = 'Creating Account...';
+        btn.disabled = true;
+        errorDiv.classList.add('hidden');
+        successDiv.classList.add('hidden');
+
+        try {
+            const response = await fetch('/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Registration failed');
+            }
+
+            const data = await response.json();
+            
+            successDiv.textContent = 'Account created successfully! Redirecting to login...';
+            successDiv.classList.remove('hidden');
+
+            // Clear form
+            registerForm.reset();
+
+            // Redirect to login after 2 seconds
+            setTimeout(() => {
+                registerModal.classList.add('hidden');
+                document.getElementById('username').focus();
+            }, 2000);
+        } catch (error) {
+            console.error('Registration error:', error);
+            errorDiv.textContent = error.message || 'An error occurred during registration';
+            errorDiv.classList.remove('hidden');
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    });
 
     // --- Authentication Handling ---
     loginForm.addEventListener('submit', async (e) => {
