@@ -115,19 +115,20 @@
 
             <form id="login-form" class="space-y-6">
                 <div>
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Email Address</label>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Username</label>
                     <div class="relative">
-                        <i class="fa-solid fa-envelope absolute left-4 top-3.5 text-gray-500"></i>
-                        <input type="email" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all" placeholder="coach@team.com">
+                        <i class="fa-solid fa-user absolute left-4 top-3.5 text-gray-500"></i>
+                        <input type="text" id="username" name="username" required class="w-full bg-pitch-light border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all" placeholder="coach">
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-400 mb-2">Password</label>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-4 top-3.5 text-gray-500"></i>
-                        <input type="password" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all" placeholder="••••••••">
+                        <input type="password" id="password" name="password" required class="w-full bg-pitch-light border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all" placeholder="••••••••">
                     </div>
                 </div>
+                <div id="login-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm"></div>
                 <button type="submit" class="w-full bg-gradient-to-r from-pitch-accent to-emerald-600 text-pitch-dark font-bold py-3 rounded-xl hover:shadow-[0_0_20px_rgba(0,255,136,0.4)] transition-all transform hover:scale-[1.02]">
                     Enter Dashboard
                 </button>
@@ -332,6 +333,197 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Add Player Modal -->
+    <div id="add-player-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto">
+        <div class="glass-panel rounded-2xl w-full max-w-md mx-4 p-8 relative my-8">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pitch-secondary to-pitch-accent"></div>
+            <button onclick="window.closeAddPlayerModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            
+            <h2 class="text-2xl font-bold text-white mb-6">Add Player</h2>
+            
+            <form id="add-player-form" class="space-y-5">
+                <!-- Profile Picture Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-3">Player Photo</label>
+                    <div class="flex flex-col items-center gap-4">
+                        <div id="player-photo-preview" class="w-24 h-24 rounded-full bg-pitch-light border-2 border-gray-700 flex items-center justify-center overflow-hidden">
+                            <i class="fa-solid fa-user text-gray-500 text-3xl"></i>
+                        </div>
+                        <div class="flex gap-2 w-full">
+                            <label class="flex-1 bg-pitch-light border border-gray-700 rounded-lg py-2.5 px-3 text-center cursor-pointer hover:border-pitch-accent transition-colors text-sm text-gray-400 hover:text-gray-300">
+                                <i class="fa-solid fa-camera mr-2"></i>Choose Photo
+                                <input type="file" id="player-photo" accept="image/*" class="hidden">
+                            </label>
+                            <button type="button" id="player-photo-clear" onclick="window.clearPlayerPhoto()" class="bg-red-500/20 text-red-400 hover:bg-red-500/30 px-3 py-2.5 rounded-lg text-sm transition-colors hidden">Clear</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Player Name -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Player Name *</label>
+                    <input type="text" id="player-name" required placeholder="John Doe" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                </div>
+                
+                <!-- Position -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Position *</label>
+                    <select id="player-position" required class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                        <option value="">Select Position</option>
+                        <option value="Goalkeeper">Goalkeeper</option>
+                        <option value="Defender">Defender</option>
+                        <option value="Midfielder">Midfielder</option>
+                        <option value="Forward">Forward</option>
+                    </select>
+                </div>
+                
+                <!-- Team Assignment -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Assign to Team</label>
+                    <select id="player-team" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                        <option value="">Select Team</option>
+                    </select>
+                </div>
+                
+                <!-- Jersey Number & Birth Date -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Jersey Number</label>
+                        <input type="number" id="player-jersey" min="1" max="99" placeholder="10" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Birth Date</label>
+                        <input type="date" id="player-birth-date" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                    </div>
+                </div>
+                
+                <div id="player-form-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-3 py-2 rounded-lg text-sm"></div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="window.closeAddPlayerModal()" class="flex-1 bg-gray-700/50 text-gray-300 py-2.5 rounded-lg hover:bg-gray-700 transition-colors font-medium">Cancel</button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-pitch-accent to-emerald-600 text-pitch-dark py-2.5 rounded-lg hover:shadow-[0_0_15px_rgba(0,255,136,0.3)] transition-all font-bold">Add Player</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Player Modal -->
+    <div id="edit-player-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto">
+        <div class="glass-panel rounded-2xl w-full max-w-md mx-4 p-8 relative my-8">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pitch-secondary to-pitch-accent"></div>
+            <button onclick="window.closeEditPlayerModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            
+            <h2 class="text-2xl font-bold text-white mb-6">Edit Player</h2>
+            
+            <form id="edit-player-form" class="space-y-5">
+                <!-- Profile Picture Upload -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-3">Player Photo</label>
+                    <div class="flex flex-col items-center gap-4">
+                        <div id="edit-player-photo-preview" class="w-24 h-24 rounded-full bg-pitch-light border-2 border-gray-700 flex items-center justify-center overflow-hidden">
+                            <i class="fa-solid fa-user text-gray-500 text-3xl"></i>
+                        </div>
+                        <div class="flex gap-2 w-full">
+                            <label class="flex-1 bg-pitch-light border border-gray-700 rounded-lg py-2.5 px-3 text-center cursor-pointer hover:border-pitch-accent transition-colors text-sm text-gray-400 hover:text-gray-300">
+                                <i class="fa-solid fa-camera mr-2"></i>Change Photo
+                                <input type="file" id="edit-player-photo" accept="image/*" class="hidden">
+                            </label>
+                            <button type="button" id="edit-player-photo-clear" onclick="window.clearEditPlayerPhoto()" class="bg-red-500/20 text-red-400 hover:bg-red-500/30 px-3 py-2.5 rounded-lg text-sm transition-colors hidden">Clear</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Player Name -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Player Name *</label>
+                    <input type="text" id="edit-player-name" required placeholder="John Doe" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                </div>
+                
+                <!-- Position -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Position *</label>
+                    <select id="edit-player-position" required class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                        <option value="">Select Position</option>
+                        <option value="Goalkeeper">Goalkeeper</option>
+                        <option value="Defender">Defender</option>
+                        <option value="Midfielder">Midfielder</option>
+                        <option value="Forward">Forward</option>
+                    </select>
+                </div>
+                
+                <!-- Team Assignment -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Assign to Team</label>
+                    <select id="edit-player-team" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                        <option value="">Select Team</option>
+                    </select>
+                </div>
+                
+                <!-- Jersey Number & Birth Date -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Jersey Number</label>
+                        <input type="number" id="edit-player-jersey" min="1" max="99" placeholder="10" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Birth Date</label>
+                        <input type="date" id="edit-player-birth-date" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                    </div>
+                </div>
+                
+                <div id="edit-player-form-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-3 py-2 rounded-lg text-sm"></div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="window.closeEditPlayerModal()" class="flex-1 bg-gray-700/50 text-gray-300 py-2.5 rounded-lg hover:bg-gray-700 transition-colors font-medium">Cancel</button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-pitch-accent to-emerald-600 text-pitch-dark py-2.5 rounded-lg hover:shadow-[0_0_15px_rgba(0,255,136,0.3)] transition-all font-bold">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Team Modal -->
+    <div id="add-team-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="glass-panel rounded-2xl w-full max-w-md mx-4 p-8 relative">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pitch-secondary to-pitch-accent"></div>
+            <button onclick="window.closeAddTeamModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            
+            <h2 class="text-2xl font-bold text-white mb-6">Create Team</h2>
+            
+            <form id="add-team-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Team Name *</label>
+                    <input type="text" id="team-name" required placeholder="Team Name" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Division/League</label>
+                    <input type="text" id="team-division" placeholder="Premier League, Division 1, etc." class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Primary Color</label>
+                    <div class="flex gap-3">
+                        <input type="color" id="team-color-primary" value="#00ff88" class="w-14 h-10 rounded-lg cursor-pointer border border-gray-700">
+                        <input type="text" id="team-color-primary-hex" value="#00ff88" placeholder="#00ff88" class="flex-1 bg-pitch-light border border-gray-700 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all text-sm font-mono">
+                    </div>
+                </div>
+                
+                <div id="team-form-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-3 py-2 rounded-lg text-sm"></div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="window.closeAddTeamModal()" class="flex-1 bg-gray-700/50 text-gray-300 py-2.5 rounded-lg hover:bg-gray-700 transition-colors font-medium">Cancel</button>
+                    <button type="submit" class="flex-1 bg-gradient-to-r from-pitch-accent to-emerald-600 text-pitch-dark py-2.5 rounded-lg hover:shadow-[0_0_15px_rgba(0,255,136,0.3)] transition-all font-bold">Create Team</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="/static/js/app-enhanced.js"></script>

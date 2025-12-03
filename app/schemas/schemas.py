@@ -47,9 +47,9 @@ class PlayerBase(BaseModel):
     position: str = Field(..., min_length=1, max_length=50)
     team: Optional[str] = Field(None, max_length=100)
     team_id: Optional[int] = None
-    age: Optional[int] = Field(None, ge=15, le=50)
+    birth_date: Optional[str] = Field(None, max_length=10)  # YYYY-MM-DD
     jersey_number: Optional[int] = Field(None, ge=1, le=99)
-    photo_url: Optional[str] = Field(None, max_length=500)
+    photo_url: Optional[str] = None  # No length limit for base64 data
 
 
 class PlayerCreate(PlayerBase):
@@ -64,13 +64,14 @@ class PlayerUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     position: Optional[str] = Field(None, min_length=1, max_length=50)
     team: Optional[str] = Field(None, max_length=100)
-    age: Optional[int] = Field(None, ge=15, le=50)
+    birth_date: Optional[str] = Field(None, max_length=10)
 
 
 class PlayerResponse(PlayerBase):
     """Schema for player response."""
 
     id: int
+    age: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 

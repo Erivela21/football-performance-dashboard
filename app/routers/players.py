@@ -1,6 +1,7 @@
 """Players API router for CRUD operations on players."""
 
 from typing import List
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,7 @@ from app.db.database import get_db
 from app.models.models import Player
 from app.schemas.schemas import PlayerCreate, PlayerUpdate, PlayerResponse
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/players", tags=["players"])
 
 
@@ -33,11 +35,16 @@ def get_player(player_id: int, db: Session = Depends(get_db)):
 @router.post("", response_model=PlayerResponse, status_code=status.HTTP_201_CREATED)
 def create_player(player: PlayerCreate, db: Session = Depends(get_db)):
     """Create a new player."""
-    db_player = Player(**player.model_dump())
-    db.add(db_player)
-    db.commit()
-    db.refresh(db_player)
-    return db_player
+    try:
+        logger.info(f"Creating player with data: {player}")
+        db_player = Player(**player.model_dump())
+        db.add(db_player)
+        db.commit()
+        db.refresh(db_player)
+        return db_player
+    except Exception as e:
+        logger.error(f"Error creating player: {e}", exc_info=True)
+        raise
 
 
 @router.put("/{player_id}", response_model=PlayerResponse)

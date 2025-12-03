@@ -82,22 +82,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleLogin(e) {
         e.preventDefault();
-        const emailInput = els.loginForm.querySelector('input[type="email"]');
-        const passwordInput = els.loginForm.querySelector('input[type="password"]');
+        const usernameInput = els.loginForm.querySelector('input#username');
+        const passwordInput = els.loginForm.querySelector('input#password');
         const btn = els.loginForm.querySelector('button');
+        const errorDiv = document.getElementById('login-error');
         
-        // For MVP, we use username as email or extract username from email
-        // The backend expects 'username' in UserCreate for login
-        // Let's assume the user enters 'demo' or 'demo@coach.com'
-        // We'll try to use the part before @ as username if it's an email
-        let username = emailInput.value;
-        if (username.includes('@')) {
-            username = username.split('@')[0];
-        }
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
 
         const originalText = btn.innerText;
         btn.innerText = 'Authenticating...';
         btn.disabled = true;
+        errorDiv.classList.add('hidden');
 
         try {
             const response = await fetch(`${API_BASE}/auth/login`, {
@@ -105,23 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: username,
-                    password: passwordInput.value,
-                    email: emailInput.value // Backend might ignore this for login but good to send
+                    password: password
                 })
             });
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
-                let msg = errData.detail;
+                let msg = errData.detail || 'Login failed';
                 if (typeof msg === 'object') {
                     msg = JSON.stringify(msg);
                 }
-                throw new Error(msg || `Login failed (${response.status})`);
+                throw new Error(msg);
             }
 
             const data = await response.json();
             STATE.token = data.access_token;
-            STATE.user = { username: username }; // Simple user obj
+            STATE.user = { username: username };
             
             localStorage.setItem('token', STATE.token);
             localStorage.setItem('user', JSON.stringify(STATE.user));
@@ -131,7 +126,9 @@ document.addEventListener('DOMContentLoaded', () => {
             navigateTo('home');
 
         } catch (error) {
-            alert('Login failed: ' + error.message);
+            console.error('Login error:', error);
+            errorDiv.textContent = error.message || 'An error occurred during login';
+            errorDiv.classList.remove('hidden');
         } finally {
             btn.innerText = originalText;
             btn.disabled = false;
@@ -200,6 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             throw new Error(errMsg);
         }
+        
+        // Handle 204 No Content (successful deletion)
+        if (res.status === 204 || res.status === 204) {
+            return null;
+        }
+        
         return res.json();
     }
 
@@ -240,14 +243,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function renderHome() {
         // Fetch summary data
-        const [insights, schedule] = await Promise.all([
+        const [insights, schedule, players] = await Promise.all([
             apiCall(`/analytics/insights?days=7${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`),
-            apiCall(`/schedule?limit=1${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`)
+            apiCall(`/schedule?limit=1${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`),
+            apiCall(`/players${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}` : ''}`)
         ]);
 
         const nextMatch = schedule[0];
         const nextMatchText = nextMatch ? new Date(nextMatch.event_date).toLocaleDateString() : 'No upcoming';
         const nextMatchOpponent = nextMatch ? nextMatch.opponent : '-';
+        const totalPlayers = players.length;
 
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between relative z-10">
@@ -354,6 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${players.map(player => `
                     <div class="glass-panel p-6 rounded-2xl hover:bg-white/5 transition-all group relative">
                         <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                            <button onclick="window.editPlayer(${player.id})" class="text-pitch-accent hover:text-pitch-accent/80"><i class="fa-solid fa-edit"></i></button>
                             <button onclick="window.deletePlayer(${player.id})" class="text-red-400 hover:text-red-300"><i class="fa-solid fa-trash"></i></button>
                         </div>
                         <div class="flex items-center gap-4 mb-4 cursor-pointer" onclick="window.viewPlayer(${player.id})">
@@ -390,6 +396,12 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         window.openAddPlayerModal = openAddPlayerModal;
+        window.closeAddPlayerModal = closeAddPlayerModal;
+        window.clearPlayerPhoto = clearPlayerPhoto;
+        window.editPlayer = editPlayer;
+        window.openEditPlayerModal = openEditPlayerModal;
+        window.closeEditPlayerModal = closeEditPlayerModal;
+        window.clearEditPlayerPhoto = clearEditPlayerPhoto;
         window.deletePlayer = deletePlayer;
         window.viewPlayer = viewPlayer;
     }
@@ -427,6 +439,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         window.openAddTeamModal = openAddTeamModal;
+        window.closeAddTeamModal = closeAddTeamModal;
         window.deleteTeam = deleteTeam;
         window.selectTeam = (id) => {
             const team = teams.find(t => t.id === id);
@@ -648,60 +661,289 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Modals & Actions ---
 
     async function openAddPlayerModal() {
-        const name = prompt("Player Name:");
-        if (!name) return;
-        const position = prompt("Position (Forward, Midfielder, Defender, Goalkeeper):");
+        const modal = document.getElementById('add-player-modal');
+        modal.classList.remove('hidden');
         
-        try {
-            await apiCall('/players', 'POST', {
-                name,
-                position,
-                team_id: STATE.currentTeam ? STATE.currentTeam.id : null,
-                jersey_number: 0,
-                age: 20
-            });
-            renderPlayers();
-        } catch (e) {
-            alert(e.message);
-        }
+        // Clear form
+        document.getElementById('add-player-form').reset();
+        document.getElementById('player-form-error').classList.add('hidden');
+        window.playerPhotoData = null;
+        document.getElementById('player-photo-preview').innerHTML = '<i class="fa-solid fa-user text-gray-500 text-3xl"></i>';
+        document.getElementById('player-photo-clear').classList.add('hidden');
+        
+        // Populate team dropdown
+        const teamSelect = document.getElementById('player-team');
+        teamSelect.innerHTML = '<option value="">Select Team</option>';
+        STATE.teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.id;
+            option.textContent = team.name;
+            if (STATE.currentTeam && STATE.currentTeam.id === team.id) {
+                option.selected = true;
+            }
+            teamSelect.appendChild(option);
+        });
+        
+        // Handle photo upload
+        document.getElementById('player-photo').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    window.playerPhotoData = event.target.result;
+                    document.getElementById('player-photo-preview').innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
+                    document.getElementById('player-photo-clear').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        
+        // Handle form submission
+        document.getElementById('add-player-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('player-name').value.trim();
+            const position = document.getElementById('player-position').value;
+            const teamId = document.getElementById('player-team').value;
+            const jersey = document.getElementById('player-jersey').value || 0;
+            const birthDate = document.getElementById('player-birth-date').value;
+            const errorDiv = document.getElementById('player-form-error');
+            
+            if (!name || !position) {
+                errorDiv.textContent = 'Please fill in all required fields';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                errorDiv.classList.add('hidden');
+                const playerData = {
+                    name,
+                    position,
+                    team_id: teamId ? parseInt(teamId) : null,
+                    jersey_number: jersey ? parseInt(jersey) : null,
+                    birth_date: birthDate || null
+                };
+                
+                // Only include photo_url if provided
+                if (window.playerPhotoData) {
+                    playerData.photo_url = window.playerPhotoData;
+                }
+                
+                await apiCall('/players', 'POST', playerData);
+                closeAddPlayerModal();
+                await renderPlayers();
+            } catch (e) {
+                errorDiv.textContent = e.message || 'Failed to add player';
+                errorDiv.classList.remove('hidden');
+            }
+        };
+    }
+
+    function closeAddPlayerModal() {
+        document.getElementById('add-player-modal').classList.add('hidden');
+    }
+
+    function clearPlayerPhoto() {
+        window.playerPhotoData = null;
+        document.getElementById('player-photo').value = '';
+        document.getElementById('player-photo-preview').innerHTML = '<i class="fa-solid fa-user text-gray-500 text-3xl"></i>';
+        document.getElementById('player-photo-clear').classList.add('hidden');
     }
 
     async function deletePlayer(id) {
-        if (!confirm("Are you sure?")) return;
+        if (!confirm("Are you sure you want to delete this player?")) return;
         try {
             await apiCall(`/players/${id}`, 'DELETE');
-            renderPlayers();
+            await renderPlayers();
         } catch (e) {
-            alert(e.message);
+            alert('Error: ' + e.message);
         }
+    }
+
+    async function editPlayer(id) {
+        try {
+            const player = await apiCall(`/players/${id}`);
+            openEditPlayerModal(player);
+        } catch (e) {
+            alert('Error loading player: ' + e.message);
+        }
+    }
+
+    async function openEditPlayerModal(player) {
+        const modal = document.getElementById('edit-player-modal');
+        modal.classList.remove('hidden');
+        
+        // Store current player ID for submission
+        window.editingPlayerId = player.id;
+        window.editPlayerPhotoData = null;
+        
+        // Populate form with current player data
+        document.getElementById('edit-player-name').value = player.name || '';
+        document.getElementById('edit-player-position').value = player.position || '';
+        document.getElementById('edit-player-jersey').value = player.jersey_number || '';
+        document.getElementById('edit-player-birth-date').value = player.birth_date || '';
+        document.getElementById('edit-player-form-error').classList.add('hidden');
+        
+        // Set photo preview
+        if (player.photo_url) {
+            document.getElementById('edit-player-photo-preview').innerHTML = `<img src="${player.photo_url}" class="w-full h-full object-cover">`;
+        } else {
+            document.getElementById('edit-player-photo-preview').innerHTML = '<i class="fa-solid fa-user text-gray-500 text-3xl"></i>';
+        }
+        document.getElementById('edit-player-photo-clear').classList.add('hidden');
+        document.getElementById('edit-player-photo').value = '';
+        
+        // Populate team dropdown
+        const teamSelect = document.getElementById('edit-player-team');
+        teamSelect.innerHTML = '<option value="">Select Team</option>';
+        STATE.teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.id;
+            option.textContent = team.name;
+            if (player.team_id && player.team_id === team.id) {
+                option.selected = true;
+            }
+            teamSelect.appendChild(option);
+        });
+        
+        // Handle photo upload
+        document.getElementById('edit-player-photo').onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    window.editPlayerPhotoData = event.target.result;
+                    document.getElementById('edit-player-photo-preview').innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
+                    document.getElementById('edit-player-photo-clear').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        
+        // Handle form submission
+        document.getElementById('edit-player-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('edit-player-name').value.trim();
+            const position = document.getElementById('edit-player-position').value;
+            const teamId = document.getElementById('edit-player-team').value;
+            const jersey = document.getElementById('edit-player-jersey').value || 0;
+            const birthDate = document.getElementById('edit-player-birth-date').value;
+            const errorDiv = document.getElementById('edit-player-form-error');
+            
+            if (!name || !position) {
+                errorDiv.textContent = 'Please fill in all required fields';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                errorDiv.classList.add('hidden');
+                const playerData = {
+                    name,
+                    position,
+                    team_id: teamId ? parseInt(teamId) : null,
+                    jersey_number: jersey ? parseInt(jersey) : null,
+                    birth_date: birthDate || null
+                };
+                
+                // Only include photo_url if a new photo was uploaded
+                if (window.editPlayerPhotoData) {
+                    playerData.photo_url = window.editPlayerPhotoData;
+                }
+                
+                await apiCall(`/players/${window.editingPlayerId}`, 'PUT', playerData);
+                closeEditPlayerModal();
+                await renderPlayers();
+            } catch (e) {
+                errorDiv.textContent = e.message || 'Failed to update player';
+                errorDiv.classList.remove('hidden');
+            }
+        };
+    }
+
+    function closeEditPlayerModal() {
+        document.getElementById('edit-player-modal').classList.add('hidden');
+        window.editingPlayerId = null;
+        window.editPlayerPhotoData = null;
+    }
+
+    function clearEditPlayerPhoto() {
+        window.editPlayerPhotoData = null;
+        document.getElementById('edit-player-photo').value = '';
+        document.getElementById('edit-player-photo-preview').innerHTML = '<i class="fa-solid fa-user text-gray-500 text-3xl"></i>';
+        document.getElementById('edit-player-photo-clear').classList.add('hidden');
     }
 
     async function viewPlayer(id) {
         const player = await apiCall(`/players/${id}`);
         alert(`Player: ${player.name}\nPosition: ${player.position}\nTeam ID: ${player.team_id}`);
-        // In a real app, this would open a nice modal
     }
 
     async function openAddTeamModal() {
-        const name = prompt("Team Name:");
-        if (!name) return;
-        try {
-            await apiCall('/teams', 'POST', { name, division: 'New' });
-            await loadInitialData(); // Refresh teams list
-            renderTeams();
-        } catch (e) {
-            alert(e.message);
-        }
+        const modal = document.getElementById('add-team-modal');
+        modal.classList.remove('hidden');
+        
+        // Clear form
+        document.getElementById('add-team-form').reset();
+        document.getElementById('team-form-error').classList.add('hidden');
+        
+        // Sync color picker with hex input
+        const colorPicker = document.getElementById('team-color-primary');
+        const hexInput = document.getElementById('team-color-primary-hex');
+        
+        colorPicker.onchange = () => {
+            hexInput.value = colorPicker.value;
+        };
+        hexInput.onchange = () => {
+            colorPicker.value = hexInput.value;
+        };
+        
+        // Handle form submission
+        document.getElementById('add-team-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('team-name').value.trim();
+            const division = document.getElementById('team-division').value.trim() || 'League';
+            const colorPrimary = document.getElementById('team-color-primary').value;
+            const errorDiv = document.getElementById('team-form-error');
+            
+            if (!name) {
+                errorDiv.textContent = 'Please enter a team name';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                errorDiv.classList.add('hidden');
+                await apiCall('/teams', 'POST', { 
+                    name, 
+                    division,
+                    color_primary: colorPrimary
+                });
+                closeAddTeamModal();
+                await loadInitialData();
+                await renderTeams();
+            } catch (e) {
+                errorDiv.textContent = e.message || 'Failed to create team';
+                errorDiv.classList.remove('hidden');
+            }
+        };
+    }
+
+    function closeAddTeamModal() {
+        document.getElementById('add-team-modal').classList.add('hidden');
     }
 
     async function deleteTeam(id) {
-        if (!confirm("Delete team and all players?")) return;
+        if (!confirm("Delete team and all associated players?")) return;
         try {
             await apiCall(`/teams/${id}`, 'DELETE');
             await loadInitialData();
-            renderTeams();
+            await renderTeams();
         } catch (e) {
-            alert(e.message);
+            alert('Error: ' + e.message);
         }
     }
 
@@ -719,9 +961,6 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.text("- Training Load Analysis included", 20, 60);
         doc.text("- Injury Risk Assessment included", 20, 70);
         
-        doc.save("performance-report.pdf");
-    }
-
         doc.save("performance-report.pdf");
     }
 });

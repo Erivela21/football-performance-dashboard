@@ -54,23 +54,48 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created successfully")
         
-        # Schema Migration: Add team_id to players if missing (Fix for Azure SQL)
+        # Schema Migration: Handle age -> birth_date conversion
         try:
-            # Check if we are using SQL Server (mssql dialect)
+            is_sqlite = "sqlite" in str(engine.url).lower()
             is_mssql = engine.dialect.name == "mssql" or "mssql" in str(engine.url)
             
-            if is_mssql:
-                logger.info("Detected SQL Server. Checking schema...")
-                with engine.connect() as connection:
-                    # 1. Add team_id column if it doesn't exist
+            with engine.connect() as connection:
+                if is_sqlite:
+                    logger.info("Detected SQLite. Checking schema...")
+                    
+                    # Check if birth_date column exists
+                    cursor = connection.execute(text("PRAGMA table_info(players)"))
+                    columns = {row[1] for row in cursor.fetchall()}
+                    
+                    # Add birth_date if it doesn't exist
+                    if 'birth_date' not in columns:
+                        logger.info("Adding birth_date column to players table...")
+                        connection.execute(text("ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"))
+                        connection.commit()
+                        logger.info("birth_date column added successfully")
+                    
+                    # Remove age column if it exists (SQLite doesn't support DROP COLUMN directly in older versions)
+                    if 'age' in columns:
+                        logger.info("Migrating age column to birth_date...")
+                        try:
+                            connection.execute(text("ALTER TABLE players DROP COLUMN age"))
+                            connection.commit()
+                            logger.info("age column dropped successfully")
+                        except Exception as e:
+                            logger.warning(f"Could not drop age column (may be normal in SQLite): {e}")
+                    
+                elif is_mssql:
+                    logger.info("Detected SQL Server. Checking schema...")
+                    
+                    # 1. Add birth_date column if it doesn't exist
                     connection.execute(text("""
-                        IF COL_LENGTH('players', 'team_id') IS NULL
+                        IF COL_LENGTH('players', 'birth_date') IS NULL
                         BEGIN
-                            ALTER TABLE players ADD team_id INT NULL;
+                            ALTER TABLE players ADD birth_date VARCHAR(10) NULL;
                         END
                     """))
                     connection.commit()
-                    logger.info("Schema migration: Checked/Added 'team_id' column.")
+                    logger.info("Schema migration: Checked/Added 'birth_date' column.")
 
                     # 2. Add Foreign Key if it doesn't exist (and teams table exists)
                     connection.execute(text("""
@@ -83,8 +108,18 @@ async def lifespan(app: FastAPI):
                     connection.commit()
                     logger.info("Schema migration: Checked/Added FK_players_teams constraint.")
                     
+                    # 3. Drop age column if it exists
+                    connection.execute(text("""
+                        IF COL_LENGTH('players', 'age') IS NOT NULL
+                        BEGIN
+                            ALTER TABLE players DROP COLUMN age;
+                        END
+                    """))
+                    connection.commit()
+                    logger.info("Schema migration: Dropped 'age' column.")
+
         except Exception as e:
-            logger.error(f"Schema migration failed: {e}")
+            logger.warning(f"Schema migration encountered an issue (may be normal): {e}")
         
         # Create demo user if not exists
         try:

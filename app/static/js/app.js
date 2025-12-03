@@ -12,23 +12,55 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPage = 'home';
 
     // --- Authentication Handling ---
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Simulate API call
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
         const btn = loginForm.querySelector('button');
+        const errorDiv = document.getElementById('login-error');
         const originalText = btn.innerText;
+
         btn.innerText = 'Authenticating...';
         btn.disabled = true;
+        errorDiv.classList.add('hidden');
 
-        setTimeout(() => {
+        try {
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Login failed');
+            }
+
+            const data = await response.json();
+            
+            // Store token
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('token_type', data.token_type);
+            
             // Success animation
             authOverlay.classList.add('opacity-0', 'pointer-events-none', 'transition-opacity', 'duration-500');
             appLayout.classList.remove('hidden');
 
             // Initialize charts after layout is visible
             renderPage('home');
-        }, 1500);
+        } catch (error) {
+            console.error('Login error:', error);
+            errorDiv.textContent = error.message || 'An error occurred during login';
+            errorDiv.classList.remove('hidden');
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     });
 
     // --- Navigation Handling ---

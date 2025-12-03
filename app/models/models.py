@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from app.db.database import Base
 
@@ -52,7 +53,7 @@ class Player(Base):
     position = Column(String(50), nullable=False)
     team = Column(String(100), nullable=True)  # Keep for backward compatibility
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
-    age = Column(Integer, nullable=True)
+    birth_date = Column(String(10), nullable=True)  # YYYY-MM-DD format
     jersey_number = Column(Integer, nullable=True)
     photo_url = Column(String(500), nullable=True)
     created_at = Column(DateTime, default=utc_now)
@@ -60,6 +61,18 @@ class Player(Base):
 
     sessions = relationship("TrainingSession", back_populates="player", cascade="all, delete-orphan")
     team_rel = relationship("Team", back_populates="players")
+
+    @hybrid_property
+    def age(self):
+        """Calculate age from birth_date."""
+        if not self.birth_date:
+            return None
+        try:
+            birth = datetime.strptime(self.birth_date, "%Y-%m-%d")
+            today = datetime.now(timezone.utc).replace(tzinfo=None)
+            return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+        except (ValueError, TypeError):
+            return None
 
 
 class TrainingSession(Base):

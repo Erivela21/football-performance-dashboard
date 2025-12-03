@@ -103,7 +103,7 @@ def get_injury_risk(
         Player.id,
         Player.name,
         Player.position,
-        Player.age,
+        Player.birth_date,
         Player.photo_url,
         func.count(TrainingSession.id).label('session_count'),
         func.sum(TrainingSession.duration_minutes).label('total_minutes'),
@@ -135,7 +135,16 @@ def get_injury_risk(
             risk_factors.append("Excessive training volume")
         
         # Factor 2: Age
-        age = result.age or 25
+        age = None
+        if result.birth_date:
+            try:
+                from datetime import datetime as dt
+                birth = dt.strptime(result.birth_date, "%Y-%m-%d")
+                today = dt.utcnow()
+                age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+            except (ValueError, TypeError):
+                age = None
+        age = age or 25
         if age > 30:
             risk_score += 15
             risk_factors.append("Age-related risk")
@@ -214,7 +223,7 @@ def get_insights(
     query = db.query(
         Player.id,
         Player.name,
-        Player.age,
+        Player.birth_date,
         Player.team_id,
         func.count(TrainingSession.id).label('session_count'),
         func.sum(TrainingSession.duration_minutes).label('total_minutes'),
@@ -232,7 +241,7 @@ def get_insights(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id, Player.name, Player.age, Player.team_id).all()
+    results = query.group_by(Player.id, Player.name, Player.birth_date, Player.team_id).all()
     
     insights = {
         "recovery_recommendations": [],
@@ -248,7 +257,15 @@ def get_insights(
     for result in results:
         # result is a Row object, access by attribute name
         player_name = result.name
-        player_age = result.age
+        player_age = None
+        if result.birth_date:
+            try:
+                from datetime import datetime as dt
+                birth = dt.strptime(result.birth_date, "%Y-%m-%d")
+                today = dt.utcnow()
+                player_age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+            except (ValueError, TypeError):
+                player_age = None
         total_mins = result.total_minutes or 0
         avg_hr = result.avg_hr or 0
         
