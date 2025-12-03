@@ -243,6 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.logout = function() {
         STATE.token = null;
         STATE.user = null;
+        // Clear all caches
+        CACHE.data.clear();
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         showLogin();
