@@ -74,6 +74,20 @@ async def lifespan(app: FastAPI):
                         connection.commit()
                         logger.info("birth_date column added successfully")
                     
+                    # Add surname if it doesn't exist
+                    if 'surname' not in columns:
+                        logger.info("Adding surname column to players table...")
+                        connection.execute(text("ALTER TABLE players ADD COLUMN surname VARCHAR(100) NULL"))
+                        connection.commit()
+                        logger.info("surname column added successfully")
+                    
+                    # Add aka if it doesn't exist
+                    if 'aka' not in columns:
+                        logger.info("Adding aka column to players table...")
+                        connection.execute(text("ALTER TABLE players ADD COLUMN aka VARCHAR(100) NULL"))
+                        connection.commit()
+                        logger.info("aka column added successfully")
+                    
                     # Remove age column if it exists (SQLite doesn't support DROP COLUMN directly in older versions)
                     if 'age' in columns:
                         logger.info("Migrating age column to birth_date...")
@@ -96,6 +110,26 @@ async def lifespan(app: FastAPI):
                     """))
                     connection.commit()
                     logger.info("Schema migration: Checked/Added 'birth_date' column.")
+
+                    # 1b. Add surname column if it doesn't exist
+                    connection.execute(text("""
+                        IF COL_LENGTH('players', 'surname') IS NULL
+                        BEGIN
+                            ALTER TABLE players ADD surname VARCHAR(100) NULL;
+                        END
+                    """))
+                    connection.commit()
+                    logger.info("Schema migration: Checked/Added 'surname' column.")
+
+                    # 1c. Add aka column if it doesn't exist
+                    connection.execute(text("""
+                        IF COL_LENGTH('players', 'aka') IS NULL
+                        BEGIN
+                            ALTER TABLE players ADD aka VARCHAR(100) NULL;
+                        END
+                    """))
+                    connection.commit()
+                    logger.info("Schema migration: Checked/Added 'aka' column.")
 
                     # 2. Add Foreign Key if it doesn't exist (and teams table exists)
                     connection.execute(text("""
