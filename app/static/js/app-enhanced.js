@@ -112,7 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.detail || `Login failed (${response.status})`);
+                let msg = errData.detail;
+                if (typeof msg === 'object') {
+                    msg = JSON.stringify(msg);
+                }
+                throw new Error(msg || `Login failed (${response.status})`);
             }
 
             const data = await response.json();

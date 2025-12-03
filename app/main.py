@@ -61,12 +61,12 @@ async def lifespan(app: FastAPI):
                 demo_user = User(
                     username="demo",
                     email="demo@coach.com",
-                    password_hash=get_password_hash("Demo123"),
+                    password_hash=get_password_hash("Demo1234"),
                     is_active=1
                 )
                 db.add(demo_user)
                 db.commit()
-                logger.info("Demo user created: demo@coach.com / Demo123")
+                logger.info("Demo user created: demo@coach.com / Demo1234")
             else:
                 logger.info("Demo user already exists")
             db.close()
