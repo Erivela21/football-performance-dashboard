@@ -25,7 +25,6 @@ def get_training_load(
         Player.id,
         Player.name,
         Player.position,
-        Player.photo_url,
         func.count(TrainingSession.id).label('session_count'),
         func.sum(TrainingSession.duration_minutes).label('total_minutes'),
         func.avg(SessionStats.distance_km).label('avg_distance'),
@@ -42,7 +41,7 @@ def get_training_load(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id, Player.name, Player.position, Player.photo_url).all()
+    results = query.group_by(Player.id, Player.name, Player.position).all()
     
     players_load = []
     for result in results:
@@ -69,7 +68,6 @@ def get_training_load(
             "player_id": result.id,
             "player_name": result.name,
             "position": result.position,
-            "photo_url": result.photo_url,
             "session_count": result.session_count,
             "total_minutes": total_mins,
             "avg_distance_km": round(avg_dist, 2) if avg_dist else 0,
@@ -104,7 +102,6 @@ def get_injury_risk(
         Player.name,
         Player.position,
         Player.birth_date,
-        Player.photo_url,
         func.count(TrainingSession.id).label('session_count'),
         func.sum(TrainingSession.duration_minutes).label('total_minutes'),
         func.avg(SessionStats.max_heart_rate).label('avg_max_hr'),
@@ -120,7 +117,7 @@ def get_injury_risk(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id, Player.name, Player.position, Player.birth_date, Player.photo_url).all()
+    results = query.group_by(Player.id, Player.name, Player.position, Player.birth_date).all()
     
     injury_risks = []
     for result in results:
