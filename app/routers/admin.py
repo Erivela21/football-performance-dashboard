@@ -143,7 +143,7 @@ def unassign_team_from_coach(
     db.delete(team)
     db.commit()
     
-    return {"message": f"Team unassigned from coach", "team_id": team_id}
+    return {"message": "Team unassigned from coach", "team_id": team_id}
 
 
 @router.post("/players/reassign", response_model=dict)
