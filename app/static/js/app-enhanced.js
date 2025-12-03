@@ -801,6 +801,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             
             const name = document.getElementById('player-name').value.trim();
+            const surname = document.getElementById('player-surname').value.trim();
+            const aka = document.getElementById('player-aka').value.trim();
             const position = document.getElementById('player-position').value;
             const teamId = document.getElementById('player-team').value;
             const jersey = document.getElementById('player-jersey').value || 0;
@@ -817,6 +819,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorDiv.classList.add('hidden');
                 const playerData = {
                     name,
+                    surname: surname || null,
+                    aka: aka || null,
                     position,
                     team_id: teamId ? parseInt(teamId) : null,
                     jersey_number: jersey ? parseInt(jersey) : null,
@@ -878,6 +882,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Populate form with current player data
         document.getElementById('edit-player-name').value = player.name || '';
+        document.getElementById('edit-player-surname').value = player.surname || '';
+        document.getElementById('edit-player-aka').value = player.aka || '';
         document.getElementById('edit-player-position').value = player.position || '';
         document.getElementById('edit-player-jersey').value = player.jersey_number || '';
         document.getElementById('edit-player-birth-date').value = player.birth_date || '';
@@ -924,6 +930,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             
             const name = document.getElementById('edit-player-name').value.trim();
+            const surname = document.getElementById('edit-player-surname').value.trim();
+            const aka = document.getElementById('edit-player-aka').value.trim();
             const position = document.getElementById('edit-player-position').value;
             const teamId = document.getElementById('edit-player-team').value;
             const jersey = document.getElementById('edit-player-jersey').value || 0;
@@ -940,6 +948,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorDiv.classList.add('hidden');
                 const playerData = {
                     name,
+                    surname: surname || null,
+                    aka: aka || null,
                     position,
                     team_id: teamId ? parseInt(teamId) : null,
                     jersey_number: jersey ? parseInt(jersey) : null,

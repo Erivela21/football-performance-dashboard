@@ -44,6 +44,8 @@ class PlayerBase(BaseModel):
     """Base schema for player data."""
 
     name: str = Field(..., min_length=1, max_length=100)
+    surname: Optional[str] = Field(None, max_length=100)
+    aka: Optional[str] = Field(None, max_length=100)
     position: str = Field(..., min_length=1, max_length=50)
     team: Optional[str] = Field(None, max_length=100)
     team_id: Optional[int] = None
@@ -62,9 +64,12 @@ class PlayerUpdate(BaseModel):
     """Schema for updating a player."""
 
     name: Optional[str] = Field(None, min_length=1, max_length=100)
+    surname: Optional[str] = Field(None, max_length=100)
+    aka: Optional[str] = Field(None, max_length=100)
     position: Optional[str] = Field(None, min_length=1, max_length=50)
     team: Optional[str] = Field(None, max_length=100)
     birth_date: Optional[str] = Field(None, max_length=10)
+    jersey_number: Optional[int] = Field(None, ge=1, le=99)
 
 
 class PlayerResponse(PlayerBase):

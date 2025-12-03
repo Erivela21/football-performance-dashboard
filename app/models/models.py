@@ -50,6 +50,8 @@ class Player(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
+    surname = Column(String(100), nullable=True)
+    aka = Column(String(100), nullable=True)  # Nickname or alternative name
     position = Column(String(50), nullable=False)
     team = Column(String(100), nullable=True)  # Keep for backward compatibility
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
