@@ -68,8 +68,10 @@ class PlayerUpdate(BaseModel):
     aka: Optional[str] = Field(None, max_length=100)
     position: Optional[str] = Field(None, min_length=1, max_length=50)
     team: Optional[str] = Field(None, max_length=100)
+    team_id: Optional[int] = Field(None)
     birth_date: Optional[str] = Field(None, max_length=10)
     jersey_number: Optional[int] = Field(None, ge=1, le=99)
+    photo_url: Optional[str] = Field(None)
 
 
 class PlayerResponse(PlayerBase):

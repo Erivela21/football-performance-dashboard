@@ -835,6 +835,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 await apiCall('/players', 'POST', playerData);
                 closeAddPlayerModal();
                 await renderPlayers();
+                // Also refresh HOME page stats
+                if (window.location.hash === '#home' || window.location.hash === '') {
+                    await renderHome();
+                }
             } catch (e) {
                 errorDiv.textContent = e.message || 'Failed to add player';
                 errorDiv.classList.remove('hidden');
@@ -957,6 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                 // Only include photo_url if a new photo was uploaded
+                // If editPlayerPhotoData is set, use it. Otherwise don't include photo_url (keeps existing)
                 if (window.editPlayerPhotoData) {
                     playerData.photo_url = window.editPlayerPhotoData;
                 }
