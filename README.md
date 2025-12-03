@@ -110,25 +110,69 @@ The MVP includes:
 
 ## API Endpoints
 
+### Core Endpoints
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/` | API information |
 | GET | `/health` | Health check status |
+
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/register` | Register new user |
+| POST | `/auth/login` | Login and get JWT token |
+
+### Players
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | GET | `/players` | List all players |
 | POST | `/players` | Create a new player |
 | GET | `/players/{id}` | Get player by ID |
 | PUT | `/players/{id}` | Update player |
 | DELETE | `/players/{id}` | Delete player |
+
+### Teams
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/teams` | List all teams |
+| POST | `/teams` | Create a new team |
+| GET | `/teams/{id}` | Get team by ID |
+| PUT | `/teams/{id}` | Update team |
+| DELETE | `/teams/{id}` | Delete team |
+
+### Training Sessions
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | GET | `/sessions` | List all training sessions |
 | POST | `/sessions` | Create a training session |
 | GET | `/sessions/{id}` | Get session by ID |
 | PUT | `/sessions/{id}` | Update session |
 | DELETE | `/sessions/{id}` | Delete session |
+
+### Session Statistics
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | GET | `/stats` | List all session statistics |
 | POST | `/stats` | Create session statistics |
 | GET | `/stats/{id}` | Get statistics by ID |
 | PUT | `/stats/{id}` | Update statistics |
 | DELETE | `/stats/{id}` | Delete statistics |
+
+### Match Schedule
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/schedule` | List all scheduled events (supports filters) |
+| POST | `/schedule` | Create a new event |
+| GET | `/schedule/{id}` | Get event by ID |
+| PUT | `/schedule/{id}` | Update event |
+| DELETE | `/schedule/{id}` | Delete event |
+
+### Analytics (NEW in Sprint 2)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/analytics/training-load` | Get training load analysis for all players |
+| GET | `/analytics/injury-risk` | Get injury risk assessment for all players |
+| GET | `/analytics/insights` | Get comprehensive insights and recommendations |
 
 ## Setup Steps
 
@@ -223,22 +267,36 @@ football-performance-dashboard/
 │   │   └── database.py      # Database connection
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── models.py        # SQLAlchemy models
+│   │   └── models.py        # SQLAlchemy models (Player, Team, Schedule, etc.)
 │   ├── routers/
 │   │   ├── __init__.py
+│   │   ├── auth.py          # Authentication router
 │   │   ├── health.py        # Health check router
 │   │   ├── players.py       # Players CRUD router
+│   │   ├── teams.py         # Teams CRUD router (NEW)
 │   │   ├── sessions.py      # Sessions CRUD router
-│   │   └── stats.py         # Stats CRUD router
-│   └── schemas/
-│       ├── __init__.py
-│       └── schemas.py       # Pydantic schemas
+│   │   ├── stats.py         # Stats CRUD router
+│   │   ├── schedule.py      # Match/Training schedule router (NEW)
+│   │   └── analytics.py     # Analytics & insights router (NEW)
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   └── schemas.py       # Pydantic schemas
+│   ├── static/
+│   │   ├── index.html       # Frontend HTML
+│   │   └── js/
+│   │       ├── app.js       # Original JavaScript
+│   │       └── app-enhanced.js  # Enhanced utilities (NEW)
+│   └── utils/
+│       └── auth.py          # Authentication utilities
+├── frontend/                # React setup (NEW)
+│   └── package.json         # Frontend dependencies
 ├── tests/
 │   ├── __init__.py
 │   └── test_api.py          # API tests
 ├── .github/
 │   └── workflows/
 │       └── ci-cd.yml        # CI/CD pipeline
+├── UPGRADE_IMPLEMENTATION_PLAN.md  # Implementation guide (NEW)
 ├── requirements.txt         # Python dependencies
 └── README.md               # Project documentation
 ```
@@ -258,7 +316,7 @@ football-performance-dashboard/
 
 ## Sprint 0 Deliverables ✓
 
-**Completed on November 29, 2025**
+**Completed on November 29, 2024**
 
 - ✓ Team formed with 6 members
 - ✓ Roles assigned (Product Owner, Scrum Master, Developers)
@@ -272,7 +330,46 @@ football-performance-dashboard/
 - ✓ Documentation completed (README with setup instructions)
 - ✓ Development environment setup (Python venv)
 
-**Next Sprint:** Sprint 1 - Azure environment setup and initial deployment
+## Sprint 2 Deliverables ✓
+
+**Completed on December 3, 2024**
+
+### Backend Core Features
+- ✓ Extended database models (Team, MatchSchedule, enhanced Player)
+- ✓ Teams API router with full CRUD operations
+- ✓ Schedule API router for match/training calendar management
+- ✓ Analytics API router with advanced features:
+  - Training load analysis with recommendations
+  - Injury risk assessment with multi-factor scoring
+  - Comprehensive insights for recovery and workload optimization
+- ✓ Enhanced Player model with team relationships, jersey numbers, photos
+- ✓ Auto-creation of demo user on startup (demo@coach.com / Demo123)
+
+### Authentication & Security
+- ✓ JWT-based authentication system
+- ✓ Protected API endpoints
+- ✓ User registration and login functionality
+
+### Advanced Analytics
+- ✓ Training load monitoring with actionable recommendations
+- ✓ Injury risk prediction based on multiple factors
+- ✓ Recovery and workload optimization insights
+- ✓ Team-based filtering and analysis
+
+### Frontend Foundation
+- ✓ Enhanced JavaScript utilities (app-enhanced.js)
+- ✓ API integration layer with authentication
+- ✓ Team/Player management functions
+- ✓ PDF/CSV export functionality
+- ✓ Modal and notification systems
+- ✓ React setup prepared for future enhancements
+
+### Documentation
+- ✓ Comprehensive implementation plan (UPGRADE_IMPLEMENTATION_PLAN.md)
+- ✓ Updated API documentation with all new endpoints
+- ✓ Testing checklist and deployment notes
+
+**Next Sprint:** Sprint 3 - Frontend integration, UI polish, and demo preparation
 
 ---
 

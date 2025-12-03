@@ -1,10 +1,9 @@
 """Analytics API router for training load, injury risk, and insights."""
 
-from typing import List, Dict, Any
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
+from sqlalchemy import func
 
 from app.db.database import get_db
 from app.models.models import Player, TrainingSession, SessionStats

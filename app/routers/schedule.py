@@ -1,7 +1,6 @@
 """Match Schedule API router for CRUD operations on schedules."""
 
 from typing import List, Optional
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
@@ -29,7 +28,7 @@ def get_schedules(
     if event_type:
         query = query.filter(MatchSchedule.event_type == event_type)
     if important_only:
-        query = query.filter(MatchSchedule.is_important == True)
+        query = query.filter(MatchSchedule.is_important)
     
     schedules = query.order_by(MatchSchedule.event_date).offset(skip).limit(limit).all()
     return schedules
