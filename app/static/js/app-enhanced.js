@@ -117,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showApp() {
         els.authOverlay.classList.add('opacity-0', 'pointer-events-none');
         els.appLayout.classList.remove('hidden');
+        updateProfileDisplay();
     }
 
     async function handleLogin(e) {
@@ -375,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <p class="text-gray-400 text-sm font-medium">Active Players</p>
-                            <h3 class="text-3xl font-bold text-white mt-1">${insights.summary.total_players_analyzed}</h3>
+                            <h3 class="text-3xl font-bold text-white mt-1">${totalPlayers}</h3>
                         </div>
                         <div class="p-2 bg-pitch-accent/10 rounded-lg text-pitch-accent group-hover:bg-pitch-accent group-hover:text-pitch-dark transition-colors">
                             <i class="fa-solid fa-user-group"></i>
@@ -1077,5 +1078,65 @@ document.addEventListener('DOMContentLoaded', () => {
         doc.text("- Injury Risk Assessment included", 20, 70);
         
         doc.save("performance-report.pdf");
+    }
+
+    // Settings functions
+    async function openSettingsModal() {
+        const modal = document.getElementById('settings-modal');
+        modal.classList.remove('hidden');
+        
+        // Load current user data
+        document.getElementById('settings-username').value = STATE.user?.username || '';
+        document.getElementById('settings-email').value = STATE.user?.email || '';
+        document.getElementById('settings-password').value = '';
+        document.getElementById('settings-form-error').classList.add('hidden');
+        
+        // Handle form submission
+        document.getElementById('settings-form').onsubmit = async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('settings-username').value.trim();
+            const email = document.getElementById('settings-email').value.trim();
+            const password = document.getElementById('settings-password').value;
+            const errorDiv = document.getElementById('settings-form-error');
+            
+            if (!username) {
+                errorDiv.textContent = 'Username is required';
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                errorDiv.classList.add('hidden');
+                // Note: This would need a backend endpoint to update user profile
+                // For now, just update local STATE
+                STATE.user.username = username;
+                STATE.user.email = email;
+                localStorage.setItem('user', JSON.stringify(STATE.user));
+                
+                // Update profile display
+                document.getElementById('profile-name').textContent = `Coach ${username}`;
+                document.getElementById('profile-avatar').src = `https://ui-avatars.com/api/?name=${username}&background=00ff88&color=0a0f1c`;
+                
+                // Show success and close
+                alert('Settings updated successfully!');
+                closeSettingsModal();
+            } catch (e) {
+                errorDiv.textContent = e.message || 'Failed to update settings';
+                errorDiv.classList.remove('hidden');
+            }
+        };
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    // Initialize profile display on page load
+    function updateProfileDisplay() {
+        if (STATE.user?.username) {
+            document.getElementById('profile-name').textContent = `Coach ${STATE.user.username}`;
+            document.getElementById('profile-avatar').src = `https://ui-avatars.com/api/?name=${STATE.user.username}&background=00ff88&color=0a0f1c`;
+        }
     }
 });

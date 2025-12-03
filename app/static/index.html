@@ -220,12 +220,12 @@
 
             <div class="p-4 border-t border-gray-800">
                 <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                    <img src="https://ui-avatars.com/api/?name=Coach+Ted&background=00ff88&color=0a0f1c" class="w-10 h-10 rounded-full border-2 border-pitch-accent">
+                    <img id="profile-avatar" src="https://ui-avatars.com/api/?name=Coach&background=00ff88&color=0a0f1c" class="w-10 h-10 rounded-full border-2 border-pitch-accent">
                     <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-white truncate">Coach Ted</p>
+                        <p id="profile-name" class="text-sm font-bold text-white truncate">Coach</p>
                         <p class="text-xs text-gray-400 truncate">Head Coach</p>
                     </div>
-                    <button class="text-gray-400 hover:text-white"><i class="fa-solid fa-gear"></i></button>
+                    <button onclick="window.openSettingsModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-gear"></i></button>
                 </div>
             </div>
         </aside>
@@ -553,6 +553,42 @@
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="window.closeEditPlayerModal()" class="flex-1 bg-gray-700/50 text-gray-300 py-2.5 rounded-lg hover:bg-gray-700 transition-colors font-medium">Cancel</button>
                     <button type="submit" class="flex-1 bg-gradient-to-r from-pitch-accent to-emerald-600 text-pitch-dark py-2.5 rounded-lg hover:shadow-[0_0_15px_rgba(0,255,136,0.3)] transition-all font-bold">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div class="glass-panel rounded-2xl w-full max-w-md mx-4 p-8 relative">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pitch-accent to-pitch-secondary"></div>
+            <button onclick="window.closeSettingsModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+            
+            <h2 class="text-2xl font-bold text-white mb-6">Settings</h2>
+            
+            <form id="settings-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                    <input type="text" id="settings-username" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-pitch-accent" placeholder="Username">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                    <input type="email" id="settings-email" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-pitch-accent" placeholder="Email">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-400 mb-2">New Password (leave blank to keep current)</label>
+                    <input type="password" id="settings-password" class="w-full bg-pitch-light border border-gray-700 rounded-xl py-2 px-4 text-white focus:outline-none focus:border-pitch-accent" placeholder="New password">
+                </div>
+                
+                <div id="settings-form-error" class="text-red-500 text-sm hidden"></div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="window.closeSettingsModal()" class="flex-1 px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                    <button type="submit" class="flex-1 px-4 py-2 rounded-lg bg-pitch-accent text-pitch-dark hover:bg-pitch-accent/90 font-medium transition-colors">Save</button>
                 </div>
             </form>
         </div>
