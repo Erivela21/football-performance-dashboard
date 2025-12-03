@@ -116,3 +116,30 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     database: str
+
+
+# Authentication / User schemas
+class UserBase(BaseModel):
+    username: str = Field(..., min_length=3, max_length=150)
+    email: Optional[str] = Field(None, max_length=254)
+
+
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8)
+
+
+class UserResponse(UserBase):
+    id: int
+    is_active: bool = True
+    created_at: Optional[datetime]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
