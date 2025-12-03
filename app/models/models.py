@@ -61,3 +61,17 @@ class SessionStats(Base):
     created_at = Column(DateTime, default=utc_now)
 
     session = relationship("TrainingSession", back_populates="stats")
+
+
+class User(Base):
+    """User model for authentication and application access."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(150), unique=True, nullable=False, index=True)
+    email = Column(String(254), unique=True, nullable=True, index=True)
+    password_hash = Column(String(255), nullable=False)
+    is_active = Column(Integer, default=1)
+    created_at = Column(DateTime, default=utc_now)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
