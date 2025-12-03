@@ -88,6 +88,18 @@ async def lifespan(app: FastAPI):
                         connection.execute(text("ALTER TABLE players ADD COLUMN birth_date VARCHAR(10) NULL"))
                         logger.info("birth_date column added successfully")
                     
+                    # Add jersey_number if missing
+                    if 'jersey_number' not in columns:
+                        logger.info("Adding jersey_number column to SQLite...")
+                        connection.execute(text("ALTER TABLE players ADD COLUMN jersey_number INTEGER NULL"))
+                        logger.info("jersey_number column added successfully")
+                    
+                    # Add photo_url if missing
+                    if 'photo_url' not in columns:
+                        logger.info("Adding photo_url column to SQLite...")
+                        connection.execute(text("ALTER TABLE players ADD COLUMN photo_url VARCHAR(500) NULL"))
+                        logger.info("photo_url column added successfully")
+                    
             elif is_mssql:
                 logger.info("Detected SQL Server. Running schema migrations...")
                 with engine.begin() as connection:
@@ -120,6 +132,26 @@ async def lifespan(app: FastAPI):
                         END
                     """))
                     logger.info("birth_date column checked/added")
+                    
+                    # Add jersey_number column
+                    logger.info("Checking/adding jersey_number column...")
+                    connection.execute(text("""
+                        IF COL_LENGTH('dbo.players', 'jersey_number') IS NULL
+                        BEGIN
+                            ALTER TABLE dbo.players ADD jersey_number INT NULL;
+                        END
+                    """))
+                    logger.info("jersey_number column checked/added")
+                    
+                    # Add photo_url column
+                    logger.info("Checking/adding photo_url column...")
+                    connection.execute(text("""
+                        IF COL_LENGTH('dbo.players', 'photo_url') IS NULL
+                        BEGIN
+                            ALTER TABLE dbo.players ADD photo_url VARCHAR(500) NULL;
+                        END
+                    """))
+                    logger.info("photo_url column checked/added")
             
             logger.info("Schema migrations completed successfully")
         except Exception as e:
