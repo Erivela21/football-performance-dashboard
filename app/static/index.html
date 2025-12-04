@@ -125,7 +125,10 @@
                     <label class="block text-sm font-medium text-gray-400 mb-2">Password</label>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-4 top-3.5 text-gray-500"></i>
-                        <input type="password" id="password" name="password" required class="w-full bg-pitch-light border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all" placeholder="••••••••">
+                        <input type="password" id="password" name="password" required class="w-full bg-pitch-light border border-gray-700 rounded-xl py-3 pl-12 pr-16 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all" placeholder="••••••••">
+                        <button type="button" class="absolute right-4 top-3.5 text-gray-500 hover:text-pitch-accent transition-all" onclick="togglePasswordVisibility('password', this)">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
                     </div>
                 </div>
                 <div id="login-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm"></div>
@@ -167,7 +170,10 @@
                     <label class="block text-sm font-medium text-gray-400 mb-2">Password</label>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-4 top-3.5 text-gray-500"></i>
-                        <input type="password" id="reg-password" name="password" required class="w-full bg-pitch-dark border border-gray-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all" placeholder="Enter password">
+                        <input type="password" id="reg-password" name="password" required class="w-full bg-pitch-dark border border-gray-700 rounded-xl py-3 pl-12 pr-16 text-white focus:outline-none focus:border-pitch-accent focus:ring-1 focus:ring-pitch-accent transition-all" placeholder="Enter password">
+                        <button type="button" class="absolute right-4 top-3.5 text-gray-500 hover:text-pitch-accent transition-all" onclick="togglePasswordVisibility('reg-password', this)">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
                     </div>
                 </div>
                 <div id="register-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm"></div>

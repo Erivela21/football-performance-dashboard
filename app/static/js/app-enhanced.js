@@ -3,6 +3,28 @@
  * Handles Authentication, Routing, API Interactions, and UI Rendering
  */
 
+/**
+ * Toggle password visibility - show/hide password text
+ * @param {string} inputId - The ID of the password input element
+ * @param {Element} button - The button element that was clicked
+ */
+function togglePasswordVisibility(inputId, button) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    
+    const icon = button.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration & State ---
     const API_BASE = ''; // Relative path
