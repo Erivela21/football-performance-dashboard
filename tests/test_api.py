@@ -54,7 +54,23 @@ class TestHealthEndpoint:
         assert data["database"] == "healthy"
     def test_get_players_empty(self, client):
         """Test getting players when none exist."""
-        response = client.get("/players")
+        # Register and login as a coach first
+        user_data = {
+            "username": "testcoach",
+            "email": "coach@example.com",
+            "password": "SecurePassword123",
+        }
+        client.post("/auth/register", json=user_data)
+        
+        login_data = {
+            "username": "testcoach",
+            "password": "SecurePassword123",
+        }
+        login_response = client.post("/auth/login", json=login_data)
+        token = login_response.json()["access_token"]
+        
+        # Now get players with auth token
+        response = client.get("/players", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 200
         assert response.json() == []
 
