@@ -1,6 +1,7 @@
 """Football Performance Dashboard - Main FastAPI Application."""
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -159,6 +160,12 @@ async def lifespan(app: FastAPI):
         # Create demo user if not exists
         try:
             db = next(get_db())
+            
+            # ONE-TIME CLEANUP: Delete all users if CLEANUP_DATABASE env var is set
+            if os.getenv('CLEANUP_DATABASE') == 'true':
+                deleted_count = db.query(User).delete()
+                db.commit()
+                logger.info(f"CLEANUP: Deleted all {deleted_count} users")
             
             # Create or get admin user
             admin_user = db.query(User).filter(User.email == "admin@dashboard.com").first()
