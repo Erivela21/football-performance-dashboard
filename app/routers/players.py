@@ -4,7 +4,6 @@ from typing import List
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
 from app.db.database import get_db
 from app.models.models import Player, User, Team
@@ -61,7 +60,7 @@ def get_player(player_id: int, current_user: User = Depends(get_current_user), d
     if not player:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Player not found or you don't have access",
+            detail="Player not found or you don't have access",
         )
     return player
 
