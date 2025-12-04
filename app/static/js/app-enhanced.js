@@ -1125,6 +1125,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
+        
+        // Expose renderAdmin globally so refresh button can call it
+        window.renderAdmin = renderAdmin;
     }
 
     async function renderAnalytics() {
