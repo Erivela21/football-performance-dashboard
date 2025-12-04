@@ -69,12 +69,12 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
     """List all coaches with their teams."""
     # Debug: Count all users first
     total_users = db.query(User).count()
-    print(f"\n[DEBUG] ===== COACHES LIST REQUESTED =====")
+    print("[DEBUG] ===== COACHES LIST REQUESTED =====")
     print(f"[DEBUG] Total users in database: {total_users}")
     
     # Get all users and show their roles
     all_users = db.query(User).all()
-    print(f"[DEBUG] All users:")
+    print("[DEBUG] All users:")
     for user in all_users:
         print(f"[DEBUG]   {user.id}: {user.username} | role='{user.role}' | active={user.is_active}")
     
@@ -83,7 +83,7 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
     print(f"[DEBUG] Filtered coaches (role='coach'): {len(coaches)} found")
     for coach in coaches:
         print(f"[DEBUG]   - {coach.username} (id={coach.id}, role={coach.role})")
-    print(f"[DEBUG] ===== END =====\n")
+    print("[DEBUG] ===== END =====\n")
     
     return coaches
 
