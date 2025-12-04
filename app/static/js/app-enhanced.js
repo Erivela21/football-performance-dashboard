@@ -1261,7 +1261,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.editingPlayerId = player.id;
         window.editPlayerPhotoData = null;
         window.existingPlayerPhoto = player.photo_url || null;  // Store existing photo to preserve on edit
-        console.log(`[DEBUG] Opening edit modal for player ${player.id} with existing photo: ${window.existingPlayerPhoto ? 'YES (' + window.existingPlayerPhoto.substring(0, 50) + '...)' : 'NO'}`);\n        
+        console.log(`[DEBUG] Opening edit modal for player ${player.id} with existing photo: ${window.existingPlayerPhoto ? 'YES (' + window.existingPlayerPhoto.substring(0, 50) + '...)' : 'NO'}`);
+        
         // Populate form with current player data
         document.getElementById('edit-player-name').value = player.name || '';
         document.getElementById('edit-player-surname').value = player.surname || '';

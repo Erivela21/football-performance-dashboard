@@ -109,14 +109,18 @@ def update_profile(
 
 
 @router.get("/me", response_model=UserResponse)
-def get_current_user_info(current_user: User = Depends(get_current_user)):
+def get_current_user_info(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get current user information including role."""
     print(f"[DEBUG] /auth/me called for user: {current_user.username}, role='{current_user.role}', id={current_user.id}")
     
-    # Final safety check: if role is still NULL, set it
+    # Final safety check: if role is still NULL, set it and persist
     if not current_user.role:
-        print(f"[DEBUG] WARNING: User {current_user.username} still has NULL role, this shouldn't happen!")
+        print(f"[DEBUG] WARNING: User {current_user.username} still has NULL role, fixing and persisting!")
         current_user.role = "coach" if current_user.username != "admin" else "admin"
+        db.add(current_user)
+        db.commit()
+        db.refresh(current_user)
+        print(f"[DEBUG] ✓ User {current_user.username} role fixed to '{current_user.role}' and saved")
     
     return current_user
 

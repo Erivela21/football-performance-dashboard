@@ -17,7 +17,7 @@ def verify_admin(current_user: User = Depends(get_current_user)):
     print(f"[DEBUG] verify_admin called for user: {current_user.username}, role='{current_user.role}' (type: {type(current_user.role)})")
     
     # Check if role is 'admin' (handle None, empty string, whitespace)
-    is_admin = current_user.role and current_user.role.strip() == "admin"
+    is_admin = current_user.role and current_user.role.strip().lower() == "admin"
     
     if not is_admin:
         print(f"[DEBUG] DENIED: User {current_user.username} has role='{current_user.role}' (not 'admin')")
