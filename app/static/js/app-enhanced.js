@@ -338,7 +338,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             showApp();
             await loadInitialData();
-            navigateTo('home');
+            // Navigate to admin if admin, home if coach
+            const initialPage = STATE.user.role === 'admin' ? 'admin' : 'home';
+            navigateTo(initialPage);
 
         } catch (error) {
             console.error('Login error:', error);

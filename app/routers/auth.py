@@ -34,6 +34,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.add(user_obj)
     db.commit()
     db.refresh(user_obj)
+    print(f"[DEBUG] ✓ User {user_obj.username} registered with id={user_obj.id}, role={user_obj.role}")
     return user_obj
 
 
