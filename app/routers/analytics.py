@@ -1,12 +1,13 @@
 """Analytics API router for training load, injury risk, and insights."""
 
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.db.database import get_db
-from app.models.models import Player, TrainingSession, SessionStats
+from app.models.models import Player, TrainingSession, SessionStats, User
+from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -15,9 +16,15 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 def get_training_load(
     team_id: int = Query(None),
     days: int = Query(7, ge=1, le=365),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get training load analysis for all players."""
+    """Get training load analysis for all players. Coaches only."""
+    if current_user.role == 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins cannot access analytics"
+        )
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
     # Query to get player training load
@@ -91,9 +98,15 @@ def get_training_load(
 @router.get("/injury-risk")
 def get_injury_risk(
     team_id: int = Query(None),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get injury risk analysis for all players."""
+    """Get injury risk analysis for all players. Coaches only."""
+    if current_user.role == 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins cannot access analytics"
+        )
     # Get recent data (last 14 days)
     cutoff_date = datetime.utcnow() - timedelta(days=14)
     
@@ -210,9 +223,15 @@ def get_injury_risk(
 def get_insights(
     team_id: int = Query(None),
     days: int = Query(7, ge=1, le=365),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get comprehensive insights for recovery, injury prevention, and workload optimization."""
+    """Get comprehensive insights for recovery, injury prevention, and workload optimization. Coaches only."""
+    if current_user.role == 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins cannot access analytics"
+        )
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
     # Get all relevant data

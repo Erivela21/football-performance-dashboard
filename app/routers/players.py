@@ -6,16 +6,22 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.models.models import Player
+from app.models.models import Player, User
 from app.schemas.schemas import PlayerCreate, PlayerUpdate, PlayerResponse
+from app.utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/players", tags=["players"])
 
 
 @router.get("", response_model=List[PlayerResponse])
-def get_players(skip: int = 0, limit: int = 100, team_id: int = None, db: Session = Depends(get_db)):
-    """Get players with optional team filtering and pagination."""
+def get_players(skip: int = 0, limit: int = 100, team_id: int = None, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Get players with optional team filtering and pagination. Coaches only."""
+    if current_user.role == 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins cannot access players"
+        )
     query = db.query(Player)
     if team_id:
         query = query.filter(Player.team_id == team_id)

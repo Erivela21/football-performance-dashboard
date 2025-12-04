@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models.models import User
-from app.schemas.schemas import UserResponse, AdminUserUpdate, CoachListResponse
+from app.schemas.schemas import UserResponse, AdminUserUpdate, CoachListResponse, UserCreate
 from app.utils.auth import get_current_user, get_password_hash
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -24,24 +24,26 @@ def verify_admin(current_user: User = Depends(get_current_user)):
 
 @router.post("/coaches", response_model=UserResponse)
 def create_coach(
-    username: str,
-    email: str,
-    password: str,
+    user_data: UserCreate,
     admin: User = Depends(verify_admin),
     db: Session = Depends(get_db)
 ):
     """Create a new coach account. Admin only."""
+    print(f"[DEBUG] Admin {admin.username} creating coach: {user_data.username}")
+    
     # Check if username already exists
-    existing_user = db.query(User).filter(User.username == username).first()
+    existing_user = db.query(User).filter(User.username == user_data.username).first()
     if existing_user:
+        print(f"[DEBUG] Username {user_data.username} already exists")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already exists"
         )
     
     # Check if email already exists
-    existing_email = db.query(User).filter(User.email == email).first()
+    existing_email = db.query(User).filter(User.email == user_data.email).first()
     if existing_email:
+        print(f"[DEBUG] Email {user_data.email} already exists")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already exists"
@@ -49,15 +51,16 @@ def create_coach(
     
     # Create new coach
     new_coach = User(
-        username=username,
-        email=email,
-        password_hash=get_password_hash(password),
+        username=user_data.username,
+        email=user_data.email,
+        password_hash=get_password_hash(user_data.password),
         role="coach",
         is_active=1
     )
     db.add(new_coach)
     db.commit()
     db.refresh(new_coach)
+    print(f"[DEBUG] ✓ Coach {new_coach.username} created with id={new_coach.id}")
     return new_coach
 
 
@@ -65,6 +68,10 @@ def create_coach(
 def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_db)):
     """List all coaches with their teams."""
     coaches = db.query(User).filter(User.role == "coach").all()
+    print(f"[DEBUG] Admin {admin.username} requested coaches list")
+    print(f"[DEBUG] Found {len(coaches)} coaches in database")
+    for coach in coaches:
+        print(f"[DEBUG]   - {coach.username} (id={coach.id}, role={coach.role}, active={coach.is_active})")
     return coaches
 
 
