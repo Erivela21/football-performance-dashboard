@@ -967,23 +967,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function renderAdmin() {
         // Load coaches list
+        console.log(`[DEBUG] renderAdmin: Fetching coaches for admin user '${STATE.user.username}'`);
         let coaches = [];
         try {
+            console.log(`[DEBUG] renderAdmin: Token = ${STATE.token ? STATE.token.substring(0, 20) + '...' : 'NONE'}`);
             const response = await fetch('/admin/coaches', {
                 headers: {
                     'Authorization': `Bearer ${STATE.token}`
                 }
             });
+            console.log(`[DEBUG] renderAdmin: Response status = ${response.status}`);
             if (response.ok) {
                 coaches = await response.json();
                 console.log(`✓ Loaded ${coaches.length} coaches from API`, coaches);
+                if (coaches.length === 0) {
+                    console.warn(`⚠️  WARNING: API returned 0 coaches. Check /admin/coaches endpoint`);
+                }
             } else {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => ({}));
                 console.error(`✗ Failed to load coaches. Status: ${response.status}`, errorData);
+                throw new Error(`HTTP ${response.status}: ${errorData.detail || 'Unknown error'}`);
             }
         } catch (err) {
             console.error('✗ Failed to load coaches:', err);
+            // Show error in UI
+            els.pageContent.innerHTML = `
+                <div class="bg-red-500/20 border border-red-500 text-red-200 p-6 rounded-lg">
+                    <h3 class="font-bold mb-2">Error Loading Coaches</h3>
+                    <p>${err.message}</p>
+                    <p class="text-sm mt-2">Check browser console (F12) for details</p>
+                </div>
+            `;
+            return;
         }
+        
+        console.log(`[DEBUG] renderAdmin: Rendering ${coaches.length} coaches`);
         
         const coachesHTML = coaches.map(coach => `
             <tr class="border-b border-gray-700 hover:bg-white/5 transition">

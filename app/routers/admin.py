@@ -78,25 +78,25 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
     # Debug: Count all users first
     total_users = db.query(User).count()
     print("[DEBUG] ===== COACHES LIST REQUESTED =====")
-    print(f"[DEBUG] Admin user: {admin.username} (role='{admin.role}')")
+    print(f"[DEBUG] Admin user: {admin.username} (id={admin.id}, role='{admin.role}')")
     print(f"[DEBUG] Total users in database: {total_users}")
     
     # Get all users and show their roles
     all_users = db.query(User).all()
-    print("[DEBUG] All users:")
+    print("[DEBUG] All users in database:")
     for user in all_users:
-        print(f"[DEBUG]   {user.id}: {user.username:20s} | role='{user.role}' | active={user.is_active}")
+        print(f"[DEBUG]   {user.id}: {user.username:20s} | role='{user.role}' | email={user.email} | active={user.is_active}")
     
     # Get coaches - MUST have role='coach' (not NULL, not admin)
     coaches = db.query(User).filter(
         User.role == "coach"
     ).all()
     
-    print(f"[DEBUG] Found {len(coaches)} coaches (role='coach' exactly)")
+    print(f"[DEBUG] Found {len(coaches)} users with role='coach'")
     for coach in coaches:
-        print(f"[DEBUG]   - {coach.username:20s} (id={coach.id}, role='{coach.role}')")
+        print(f"[DEBUG]   - ID={coach.id}, username={coach.username}, role='{coach.role}', email={coach.email}, active={coach.is_active}")
     
-    print("[DEBUG] ===== END =====\n")
+    print("[DEBUG] ===== END COACHES LIST =====\n")
     
     return coaches
 

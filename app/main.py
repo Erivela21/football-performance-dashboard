@@ -165,19 +165,40 @@ async def lifespan(app: FastAPI):
             all_users = db.query(User).all()
             print(f"[STARTUP] Total users in database: {len(all_users)}")
             
+            # Find all current admins (users with role='admin')
+            current_admins = [u.username for u in all_users if u.role and u.role.lower() == "admin"]
+            print(f"[STARTUP] Current admin users: {current_admins}")
+            
+            # Known admin identifiers
+            known_admin_usernames = ["admin", "caca12"]  # Add all known admin usernames here
+            known_admin_emails = ["admin@dashboard.com"]  # Add all known admin emails here
+            
+            # Combine: admins are either known or already have admin role
+            admin_usernames = set(current_admins)
+            for username in known_admin_usernames:
+                admin_usernames.add(username)
+            
+            print(f"[STARTUP] All admin usernames (current + known): {list(admin_usernames)}")
+            
             for user in all_users:
+                # Check if user should be an admin
+                is_admin = (
+                    user.username in admin_usernames or
+                    (user.email and user.email.lower() in [e.lower() for e in known_admin_emails])
+                )
+                
+                correct_role = "admin" if is_admin else "coach"
+                
                 if user.role is None or user.role == "" or user.role.strip() == "":
-                    # Determine correct role
-                    if user.username == "admin" or user.email == "admin@dashboard.com":
-                        new_role = "admin"
-                    else:
-                        new_role = "coach"
-                    
-                    print(f"[STARTUP] ✓ Fixing {user.username}: role '{user.role}' → '{new_role}'")
-                    user.role = new_role
+                    print(f"[STARTUP] ✓ Fixing {user.username}: role '{user.role}' → '{correct_role}'")
+                    user.role = correct_role
+                    db.add(user)
+                elif user.role.lower() != correct_role:
+                    print(f"[STARTUP] ✓ Correcting {user.username}: role '{user.role}' → '{correct_role}'")
+                    user.role = correct_role
                     db.add(user)
                 else:
-                    print(f"[STARTUP] OK: {user.username} has role='{user.role}'")
+                    print(f"[STARTUP] OK: {user.username} has role='{user.role}' (correct)")
             
             db.commit()
             print("[STARTUP] ===== ALL ROLES FIXED =====\n")
