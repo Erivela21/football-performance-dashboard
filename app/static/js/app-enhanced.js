@@ -599,30 +599,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function renderHome() {
         // Fetch summary data
-        console.log(`[DEBUG] renderHome: Loading dashboard for team=${STATE.currentTeam ? STATE.currentTeam.id : 'none'}`);
+        console.log(`[DEBUG] renderHome: Loading dashboard for team=${STATE.currentTeam ? STATE.currentTeam.id : 'none'}, user role=${STATE.user.role}`);
         
         let insights = null;
         let schedule = [];
         let players = [];
         
         try {
-            const results = await Promise.all([
-                apiCall(`/analytics/insights?days=7${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
-                    console.warn('[DEBUG] Failed to load insights:', e);
-                    return { recovery_recommendations: [], injury_prevention: [], workload_optimization: [], summary: { players_optimal_load: 0, players_needing_recovery: 0, total_players_analyzed: 0 } };
-                }),
-                apiCall(`/schedule?limit=1${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
+            // Admins don't have access to analytics endpoints, so skip those
+            if (STATE.user.role === 'admin') {
+                console.log('[DEBUG] Admin user detected - skipping analytics and players (admin-only dashboard)');
+                const scheduleResult = await apiCall(`/schedule?limit=1${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
                     console.warn('[DEBUG] Failed to load schedule:', e);
                     return [];
-                }),
-                apiCall(`/players${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
-                    console.warn('[DEBUG] Failed to load players:', e);
-                    return [];
-                })
-            ]);
-            insights = results[0];
-            schedule = results[1];
-            players = results[2];
+                });
+                schedule = scheduleResult;
+                insights = { recovery_recommendations: [], injury_prevention: [], workload_optimization: [], summary: { players_optimal_load: 0, players_needing_recovery: 0, total_players_analyzed: 0 } };
+                players = [];
+            } else {
+                // Coaches can access analytics and players
+                const results = await Promise.all([
+                    apiCall(`/analytics/insights?days=7${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
+                        console.warn('[DEBUG] Failed to load insights:', e);
+                        return { recovery_recommendations: [], injury_prevention: [], workload_optimization: [], summary: { players_optimal_load: 0, players_needing_recovery: 0, total_players_analyzed: 0 } };
+                    }),
+                    apiCall(`/schedule?limit=1${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
+                        console.warn('[DEBUG] Failed to load schedule:', e);
+                        return [];
+                    }),
+                    apiCall(`/players${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
+                        console.warn('[DEBUG] Failed to load players:', e);
+                        return [];
+                    })
+                ]);
+                insights = results[0];
+                schedule = results[1];
+                players = results[2];
+            }
         } catch (e) {
             console.error('[DEBUG] renderHome: Promise.all failed:', e);
             throw e;

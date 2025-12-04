@@ -254,6 +254,5 @@ class CoachListResponse(BaseModel):
     email: Optional[str]
     role: str
     is_active: bool
-    teams: list = []
     
     model_config = ConfigDict(from_attributes=True)
