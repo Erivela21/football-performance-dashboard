@@ -1,12 +1,12 @@
-"""Admin routes for managing coaches, teams, and players."""
+"""Admin routes for managing coaches only."""
 
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.models.models import User, Team, Player
-from app.schemas.schemas import UserResponse, AdminUserUpdate, TeamAssignment, CoachListResponse
+from app.models.models import User
+from app.schemas.schemas import UserResponse, AdminUserUpdate, CoachListResponse
 from app.utils.auth import get_current_user, get_password_hash
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -87,13 +87,33 @@ def update_coach(
     admin: User = Depends(verify_admin),
     db: Session = Depends(get_db)
 ):
-    """Update coach password, role, or status."""
+    """Update coach (username, email, password, role, or status). Admin only."""
     coach = db.query(User).filter(User.id == coach_id).first()
     if not coach:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Coach not found"
         )
+    
+    # Update username if provided
+    if update_data.username and update_data.username != coach.username:
+        existing = db.query(User).filter(User.username == update_data.username).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username already taken"
+            )
+        coach.username = update_data.username
+    
+    # Update email if provided
+    if update_data.email and update_data.email != coach.email:
+        existing = db.query(User).filter(User.email == update_data.email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+        coach.email = update_data.email
     
     # Update password if provided
     if update_data.password:
@@ -118,7 +138,7 @@ def delete_coach(
     admin: User = Depends(verify_admin),
     db: Session = Depends(get_db)
 ):
-    """Delete a coach account (cascade deletes teams and players)."""
+    """Delete a coach account (cascade deletes teams and players). Admin only."""
     coach = db.query(User).filter(User.id == coach_id).first()
     if not coach:
         raise HTTPException(
@@ -130,125 +150,3 @@ def delete_coach(
     db.commit()
     return None
 
-
-@router.post("/teams/assign", response_model=dict)
-def assign_team_to_coach(
-    assignment: TeamAssignment,
-    admin: User = Depends(verify_admin),
-    db: Session = Depends(get_db)
-):
-    """Assign a team to a coach."""
-    # Verify team exists
-    team = db.query(Team).filter(Team.id == assignment.team_id).first()
-    if not team:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Team not found"
-        )
-    
-    # Verify coach exists
-    coach = db.query(User).filter(User.id == assignment.user_id, User.role == "coach").first()
-    if not coach:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Coach not found"
-        )
-    
-    # Assign team to coach
-    team.user_id = assignment.user_id
-    db.commit()
-    db.refresh(team)
-    
-    return {"message": f"Team '{team.name}' assigned to coach '{coach.username}'", "team_id": team.id}
-
-
-@router.post("/teams/unassign", response_model=dict)
-def unassign_team_from_coach(
-    team_id: int,
-    admin: User = Depends(verify_admin),
-    db: Session = Depends(get_db)
-):
-    """Unassign a team from a coach (soft delete - sets to null)."""
-    team = db.query(Team).filter(Team.id == team_id).first()
-    if not team:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Team not found"
-        )
-    
-    # Delete the team since user_id is NOT NULL
-    # Alternatively, could move to a shared/unassigned teams pool
-    db.delete(team)
-    db.commit()
-    
-    return {"message": "Team unassigned from coach", "team_id": team_id}
-
-
-@router.post("/players/reassign", response_model=dict)
-def reassign_player_to_team(
-    player_id: int,
-    team_id: int,
-    admin: User = Depends(verify_admin),
-    db: Session = Depends(get_db)
-):
-    """Reassign a player to a different team."""
-    player = db.query(Player).filter(Player.id == player_id).first()
-    if not player:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Player not found"
-        )
-    
-    team = db.query(Team).filter(Team.id == team_id).first()
-    if not team:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Team not found"
-        )
-    
-    old_team_id = player.team_id
-    player.team_id = team_id
-    db.commit()
-    db.refresh(player)
-    
-    return {
-        "message": f"Player '{player.name}' reassigned to team '{team.name}'",
-        "player_id": player.id,
-        "old_team_id": old_team_id,
-        "new_team_id": team_id
-    }
-
-
-@router.delete("/players/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_player(
-    player_id: int,
-    admin: User = Depends(verify_admin),
-    db: Session = Depends(get_db)
-):
-    """Delete a player."""
-    player = db.query(Player).filter(Player.id == player_id).first()
-    if not player:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Player not found"
-        )
-    
-    db.delete(player)
-    db.commit()
-    return None
-
-
-@router.get("/stats", response_model=dict)
-def admin_stats(admin: User = Depends(verify_admin), db: Session = Depends(get_db)):
-    """Get system statistics."""
-    total_coaches = db.query(User).filter(User.role == "coach").count()
-    total_admins = db.query(User).filter(User.role == "admin").count()
-    total_teams = db.query(Team).count()
-    total_players = db.query(Player).count()
-    
-    return {
-        "total_coaches": total_coaches,
-        "total_admins": total_admins,
-        "total_teams": total_teams,
-        "total_players": total_players
-    }
