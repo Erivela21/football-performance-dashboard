@@ -152,12 +152,18 @@ def update_coach(
     db: Session = Depends(get_db)
 ):
     """Update coach (username, email, password, role, or status). Admin only."""
+    print(f"[DEBUG] update_coach called with coach_id={coach_id}")
+    print(f"[DEBUG] update_data type: {type(update_data)}")
+    print(f"[DEBUG] update_data dict: {update_data.model_dump()}")
+    
     coach = db.query(User).filter(User.id == coach_id).first()
     if not coach:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Coach not found"
         )
+    
+    print(f"[DEBUG] Found coach: {coach.username}, updating with: username={getattr(update_data, 'username', None)}, email={getattr(update_data, 'email', None)}, password={'***' if getattr(update_data, 'password', None) else None}")
     
     # Update username if provided
     if update_data.username and update_data.username != coach.username:
@@ -168,6 +174,7 @@ def update_coach(
                 detail="Username already taken"
             )
         coach.username = update_data.username
+        print(f"[DEBUG] Updated username to: {update_data.username}")
     
     # Update email if provided
     if update_data.email and update_data.email != coach.email:
@@ -178,21 +185,26 @@ def update_coach(
                 detail="Email already registered"
             )
         coach.email = update_data.email
+        print(f"[DEBUG] Updated email to: {update_data.email}")
     
     # Update password if provided
     if update_data.password:
         coach.password_hash = get_password_hash(update_data.password)
+        print(f"[DEBUG] Updated password")
     
     # Update role if provided
     if update_data.role:
         coach.role = update_data.role
+        print(f"[DEBUG] Updated role to: {update_data.role}")
     
     # Update is_active if provided
     if update_data.is_active is not None:
         coach.is_active = int(update_data.is_active)
+        print(f"[DEBUG] Updated is_active to: {coach.is_active}")
     
     db.commit()
     db.refresh(coach)
+    print(f"✓ Coach {coach.id} updated successfully")
     return coach
 
 
