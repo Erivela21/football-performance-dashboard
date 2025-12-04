@@ -846,8 +846,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderTrainingLoad() {
         const data = await apiCall(`/analytics/training-load?days=${STATE.periodDays}${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`);
         
-        const players = Array.isArray(data) ? data : (data.players || []);
-
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between mb-8">
                 <div>
@@ -869,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-800 text-sm">
-                            ${players.length > 0 ? players.map(p => `
+                            ${data.players.map(p => `
                                 <tr class="hover:bg-white/5 transition-colors">
                                     <td class="px-6 py-4 flex items-center gap-3">
                                         <img src="${p.photo_url || `https://ui-avatars.com/api/?name=${p.player_name}&background=random`}" class="w-8 h-8 rounded-full">
@@ -891,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         </span>
                                     </td>
                                 </tr>
-                            `).join('') : '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-400">No data available</td></tr>'}
+                            `).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -1152,36 +1150,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-panel p-6 rounded-2xl">
-                    <h3 class="text-lg font-bold text-white mb-4">Workload Distribution</h3>
                     <canvas id="loadChart"></canvas>
                 </div>
                 <div class="glass-panel p-6 rounded-2xl">
-                    <h3 class="text-lg font-bold text-white mb-4">Player Workload Analysis</h3>
-                    <canvas id="playerLoadChart"></canvas>
-                </div>
-            </div>
-
-            <div class="glass-panel p-6 rounded-2xl">
-                <h3 class="text-lg font-bold text-white mb-4">Player Workload Statistics</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-white/5 text-gray-400 text-xs uppercase">
-                            <tr>
-                                <th class="px-6 py-4">Player</th>
-                                <th class="px-6 py-4">Position</th>
-                                <th class="px-6 py-4">Sessions</th>
-                                <th class="px-6 py-4">Total Minutes</th>
-                                <th class="px-6 py-4">Avg Distance</th>
-                                <th class="px-6 py-4">Load Score</th>
-                                <th class="px-6 py-4">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="workload-table-body" class="divide-y divide-gray-800 text-sm">
-                            <tr><td colspan="7" class="px-6 py-4 text-center text-gray-400">Loading data...</td></tr>
-                        </tbody>
-                    </table>
+                    <canvas id="riskChart"></canvas>
                 </div>
             </div>
         `;
@@ -1192,12 +1166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // Load Data
-        const [insights, trainingLoadData] = await Promise.all([
-            apiCall(`/analytics/insights?days=${STATE.periodDays}${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`),
-            apiCall(`/analytics/training-load?days=${STATE.periodDays}${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`)
-        ]);
-        
-        const trainingLoad = trainingLoadData.players || [];
+        const insights = await apiCall(`/analytics/insights?days=${STATE.periodDays}${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`);
         
         // Render Text Insights
         const container = document.getElementById('ai-insights-container');
@@ -1222,89 +1191,18 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('')}
         `;
 
-        // Render Table
-        const tableBody = document.getElementById('workload-table-body');
-        if (trainingLoad && trainingLoad.length > 0) {
-            tableBody.innerHTML = trainingLoad.map(player => `
-                <tr class="hover:bg-white/5 transition-colors">
-                    <td class="px-6 py-4 flex items-center gap-3">
-                        <img src="${player.photo_url || `https://ui-avatars.com/api/?name=${player.player_name}&background=random`}" class="w-8 h-8 rounded-full">
-                        <span class="font-medium text-white">${player.player_name}</span>
-                    </td>
-                    <td class="px-6 py-4 text-gray-400">${player.position}</td>
-                    <td class="px-6 py-4 text-white">${player.session_count}</td>
-                    <td class="px-6 py-4 text-white">${player.total_minutes} min</td>
-                    <td class="px-6 py-4 text-white">${player.avg_distance_km} km</td>
-                    <td class="px-6 py-4">
-                        <div class="w-full bg-gray-700 rounded-full h-2.5">
-                            <div class="bg-pitch-accent h-2.5 rounded-full" style="width: ${player.load_score}%"></div>
-                        </div>
-                        <span class="text-xs text-gray-400 mt-1">${player.load_score}%</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="px-2 py-1 rounded-full text-xs ${
-                            player.status === 'warning' ? 'bg-red-500/20 text-red-400' :
-                            player.status === 'optimal' ? 'bg-green-500/20 text-green-400' :
-                            player.status === 'moderate' ? 'bg-blue-500/20 text-blue-400' :
-                            'bg-gray-500/20 text-gray-400'
-                        }">${player.status.toUpperCase()}</span>
-                    </td>
-                </tr>
-            `).join('');
-        } else {
-            tableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-400">No training data available for this period</td></tr>';
-        }
-
         // Render Charts
-        // Chart 1: Load Distribution (Pie/Doughnut)
-        const statusCounts = { warning: 0, optimal: 0, moderate: 0, low: 0 };
-        trainingLoad.forEach(p => {
-            const status = p.status || 'low';
-            statusCounts[status] = (statusCounts[status] || 0) + 1;
-        });
-
         new Chart(document.getElementById('loadChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['High Load', 'Optimal', 'Moderate', 'Low'],
-                datasets: [{
-                    data: [statusCounts.warning, statusCounts.optimal, statusCounts.moderate, statusCounts.low],
-                    backgroundColor: ['#ff3366', '#00ff88', '#00ccff', '#6b7280'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#9ca3af' } },
-                    title: { display: true, text: 'Load Distribution', color: '#fff' }
-                }
-            }
-        });
-
-        // Chart 2: Player Workload (Bar)
-        new Chart(document.getElementById('playerLoadChart'), {
             type: 'bar',
             data: {
-                labels: trainingLoad.map(p => p.player_name),
+                labels: ['Recovery', 'Optimal', 'High Load'],
                 datasets: [{
-                    label: 'Load Score',
-                    data: trainingLoad.map(p => p.load_score),
-                    backgroundColor: trainingLoad.map(p => p.status === 'warning' ? '#ff3366' : '#00ff88'),
-                    borderRadius: 4
+                    label: 'Player Distribution',
+                    data: [insights.summary.players_needing_recovery, insights.summary.players_optimal_load, 0], // Simplified
+                    backgroundColor: ['#ef4444', '#00ff88', '#fbbf24']
                 }]
             },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true, max: 100, grid: { color: '#374151' }, ticks: { color: '#9ca3af' } },
-                    x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
-                },
-                plugins: {
-                    legend: { display: false },
-                    title: { display: true, text: 'Individual Player Load', color: '#fff' }
-                }
-            }
+            options: { plugins: { title: { display: true, text: 'Load Distribution', color: '#fff' } } }
         });
     }
 
