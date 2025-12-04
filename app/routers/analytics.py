@@ -20,11 +20,14 @@ def get_training_load(
     db: Session = Depends(get_db)
 ):
     """Get training load analysis for all players. Coaches only."""
+    print(f"[DEBUG] get_training_load called by user {current_user.username} with role='{current_user.role}'")
     if current_user.role == 'admin':
+        print(f"[DEBUG] Blocking admin user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admins cannot access analytics"
         )
+    print(f"[DEBUG] Allowing coach {current_user.username} to access training-load analytics")
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
     # Query to get player training load
@@ -102,11 +105,14 @@ def get_injury_risk(
     db: Session = Depends(get_db)
 ):
     """Get injury risk analysis for all players. Coaches only."""
+    print(f"[DEBUG] get_injury_risk called by user {current_user.username} with role='{current_user.role}'")
     if current_user.role == 'admin':
+        print(f"[DEBUG] Blocking admin user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admins cannot access analytics"
         )
+    print(f"[DEBUG] Allowing coach {current_user.username} to access injury-risk analytics")
     # Get recent data (last 14 days)
     cutoff_date = datetime.utcnow() - timedelta(days=14)
     
@@ -227,11 +233,14 @@ def get_insights(
     db: Session = Depends(get_db)
 ):
     """Get comprehensive insights for recovery, injury prevention, and workload optimization. Coaches only."""
+    print(f"[DEBUG] get_insights called by user {current_user.username} with role='{current_user.role}'")
     if current_user.role == 'admin':
+        print(f"[DEBUG] Blocking admin user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admins cannot access analytics"
         )
+    print(f"[DEBUG] Allowing coach {current_user.username} to access insights analytics")
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
     # Get all relevant data

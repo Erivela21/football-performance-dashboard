@@ -30,6 +30,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         username=user.username,
         email=user.email,
         password_hash=get_password_hash(user.password),
+        role="coach",  # Explicitly set role to coach
+        is_active=1
     )
     db.add(user_obj)
     db.commit()

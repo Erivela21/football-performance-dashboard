@@ -15,11 +15,14 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 @router.get("", response_model=List[TeamResponse])
 def get_teams(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get teams for the current user only. Coaches only."""
+    print(f"[DEBUG] get_teams called by user {current_user.username} with role='{current_user.role}'")
     if current_user.role == 'admin':
+        print(f"[DEBUG] Blocking admin user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admins cannot access teams"
         )
+    print(f"[DEBUG] Allowing coach {current_user.username} to access teams")
     teams = db.query(Team).filter(Team.user_id == current_user.id).order_by(Team.id).offset(skip).limit(limit).all()
     return teams
 

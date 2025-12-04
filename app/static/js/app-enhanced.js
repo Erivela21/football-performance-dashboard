@@ -327,10 +327,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 STATE.user = { 
                     username: userInfo.username,
                     email: userInfo.email,
-                    role: userInfo.role
+                    role: userInfo.role || 'coach'
                 };
             } else {
-                STATE.user = { username: username };
+                STATE.user = { username: username, role: 'coach' };
             }
             
             localStorage.setItem('token', STATE.token);
