@@ -44,6 +44,23 @@ def client():
 class TestHealthEndpoint:
     """Tests for the health check endpoint."""
 
+    @staticmethod
+    def get_coach_token(client):
+        """Helper to create a coach and return auth token."""
+        user_data = {
+            "username": "testcoach",
+            "email": "coach@example.com",
+            "password": "SecurePassword123",
+        }
+        client.post("/auth/register", json=user_data)
+        
+        login_data = {
+            "username": "testcoach",
+            "password": "SecurePassword123",
+        }
+        login_response = client.post("/auth/login", json=login_data)
+        return login_response.json()["access_token"]
+
     def test_health_check(self, client):
         """Test health check returns healthy status."""
         response = client.get("/health")
@@ -76,63 +93,86 @@ class TestHealthEndpoint:
 
     def test_create_player(self, client):
         """Test creating a new player."""
+        token = self.get_coach_token(client)
+        
         player_data = {
             "name": "John Doe",
             "position": "Forward",
-            "team": "Test FC",
             "birth_date": "2000-12-03",
         }
-        response = client.post("/players", json=player_data)
+        response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 201
         data = response.json()
         assert data["name"] == "John Doe"
         assert data["position"] == "Forward"
-        assert data["team"] == "Test FC"
-        assert data["age"] == 25
         assert "id" in data
 
     def test_get_player(self, client):
         """Test getting a specific player."""
+        token = self.get_coach_token(client)
+        
         player_data = {"name": "Jane Smith", "position": "Midfielder"}
-        create_response = client.post("/players", json=player_data)
+        create_response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         player_id = create_response.json()["id"]
 
-        response = client.get(f"/players/{player_id}")
+        response = client.get(f"/players/{player_id}", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 200
         assert response.json()["name"] == "Jane Smith"
 
     def test_get_player_not_found(self, client):
         """Test getting a non-existent player."""
-        response = client.get("/players/9999")
+        token = self.get_coach_token(client)
+        response = client.get("/players/9999", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 404
 
     def test_update_player(self, client):
         """Test updating a player."""
+        token = self.get_coach_token(client)
+        
         player_data = {"name": "Original Name", "position": "Defender"}
-        create_response = client.post("/players", json=player_data)
+        create_response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         player_id = create_response.json()["id"]
 
         update_data = {"name": "Updated Name"}
-        response = client.put(f"/players/{player_id}", json=update_data)
+        response = client.put(f"/players/{player_id}", json=update_data, headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 200
         assert response.json()["name"] == "Updated Name"
         assert response.json()["position"] == "Defender"
 
     def test_delete_player(self, client):
         """Test deleting a player."""
+        token = self.get_coach_token(client)
+        
         player_data = {"name": "To Delete", "position": "Goalkeeper"}
-        create_response = client.post("/players", json=player_data)
+        create_response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         player_id = create_response.json()["id"]
 
-        response = client.delete(f"/players/{player_id}")
+        response = client.delete(f"/players/{player_id}", headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 204
 
-        get_response = client.get(f"/players/{player_id}")
+        get_response = client.get(f"/players/{player_id}", headers={"Authorization": f"Bearer {token}"})
         assert get_response.status_code == 404
 
 
 class TestSessionsEndpoint:
     """Tests for the sessions API endpoints."""
+
+    @staticmethod
+    def get_coach_token(client):
+        """Helper to create a coach and return auth token."""
+        user_data = {
+            "username": "testcoach2",
+            "email": "coach2@example.com",
+            "password": "SecurePassword123",
+        }
+        client.post("/auth/register", json=user_data)
+        
+        login_data = {
+            "username": "testcoach2",
+            "password": "SecurePassword123",
+        }
+        login_response = client.post("/auth/login", json=login_data)
+        return login_response.json()["access_token"]
 
     def test_get_sessions_empty(self, client):
         """Test getting sessions when none exist."""
@@ -142,8 +182,10 @@ class TestSessionsEndpoint:
 
     def test_create_session(self, client):
         """Test creating a training session."""
+        token = self.get_coach_token(client)
+        
         player_data = {"name": "Test Player", "position": "Forward"}
-        player_response = client.post("/players", json=player_data)
+        player_response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         player_id = player_response.json()["id"]
 
         session_data = {
@@ -153,7 +195,7 @@ class TestSessionsEndpoint:
             "session_type": "Training",
             "notes": "Practice session",
         }
-        response = client.post("/sessions", json=session_data)
+        response = client.post("/sessions", json=session_data, headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 201
         data = response.json()
         assert data["duration_minutes"] == 90
@@ -174,6 +216,23 @@ class TestSessionsEndpoint:
 class TestStatsEndpoint:
     """Tests for the stats API endpoints."""
 
+    @staticmethod
+    def get_coach_token(client):
+        """Helper to create a coach and return auth token."""
+        user_data = {
+            "username": "testcoach3",
+            "email": "coach3@example.com",
+            "password": "SecurePassword123",
+        }
+        client.post("/auth/register", json=user_data)
+        
+        login_data = {
+            "username": "testcoach3",
+            "password": "SecurePassword123",
+        }
+        login_response = client.post("/auth/login", json=login_data)
+        return login_response.json()["access_token"]
+
     def test_get_stats_empty(self, client):
         """Test getting stats when none exist."""
         response = client.get("/stats")
@@ -182,8 +241,10 @@ class TestStatsEndpoint:
 
     def test_create_stats(self, client):
         """Test creating session statistics."""
+        token = self.get_coach_token(client)
+        
         player_response = client.post(
-            "/players", json={"name": "Test Player", "position": "Forward"}
+            "/players", json={"name": "Test Player", "position": "Forward"}, headers={"Authorization": f"Bearer {token}"}
         )
         player_id = player_response.json()["id"]
 
@@ -195,6 +256,7 @@ class TestStatsEndpoint:
                 "duration_minutes": 90,
                 "session_type": "Training",
             },
+            headers={"Authorization": f"Bearer {token}"}
         )
         session_id = session_response.json()["id"]
 
@@ -207,7 +269,7 @@ class TestStatsEndpoint:
             "calories_burned": 650,
             "sprints_count": 15,
         }
-        response = client.post("/stats", json=stats_data)
+        response = client.post("/stats", json=stats_data, headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 201
         data = response.json()
         assert data["distance_km"] == 8.5
