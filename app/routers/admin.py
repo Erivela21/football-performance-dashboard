@@ -85,16 +85,28 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
     all_users = db.query(User).all()
     print("[DEBUG] All users in database:")
     for user in all_users:
-        print(f"[DEBUG]   {user.id}: {user.username:20s} | role='{user.role}' | email={user.email} | active={user.is_active}")
+        role_display = f"'{user.role}'" if user.role else "NULL"
+        print(f"[DEBUG]   {user.id}: {user.username:20s} | role={role_display:10s} | email={user.email} | active={user.is_active}")
     
-    # Get coaches - MUST have role='coach' (not NULL, not admin)
+    # Get coaches - MUST have role='coach' (not NULL, not admin, case-insensitive)
     coaches = db.query(User).filter(
         User.role == "coach"
     ).all()
     
+    print(f"[DEBUG] Query: User.role == 'coach'")
     print(f"[DEBUG] Found {len(coaches)} users with role='coach'")
     for coach in coaches:
         print(f"[DEBUG]   - ID={coach.id}, username={coach.username}, role='{coach.role}', email={coach.email}, active={coach.is_active}")
+    
+    # DEBUG: Also try case-insensitive search to see if there's a case mismatch
+    coaches_case_insensitive = db.query(User).filter(
+        User.role.ilike("coach")
+    ).all()
+    if len(coaches_case_insensitive) > len(coaches):
+        print(f"[DEBUG] ⚠️  Case-insensitive search found {len(coaches_case_insensitive)} coaches (case mismatch detected!)")
+        for coach in coaches_case_insensitive:
+            if coach not in coaches:
+                print(f"[DEBUG]   - MISSED: ID={coach.id}, username={coach.username}, role='{coach.role}'")
     
     print("[DEBUG] ===== END COACHES LIST =====\n")
     

@@ -203,6 +203,29 @@ async def lifespan(app: FastAPI):
             db.commit()
             print("[STARTUP] ===== ALL ROLES FIXED =====\n")
             
+            # DIAGNOSTIC: Show final state
+            print("[STARTUP] ===== FINAL STATE AFTER ROLE FIXING =====")
+            final_admins = db.query(User).filter(User.role == "admin").all()
+            final_coaches = db.query(User).filter(User.role == "coach").all()
+            final_nulls = db.query(User).filter(User.role == None).all()
+            final_other = db.query(User).filter(~User.role.in_(["admin", "coach"])).all()
+            
+            print(f"[STARTUP] Admins (role='admin'): {len(final_admins)}")
+            for u in final_admins:
+                print(f"[STARTUP]   - {u.username} (id={u.id})")
+            print(f"[STARTUP] Coaches (role='coach'): {len(final_coaches)}")
+            for u in final_coaches:
+                print(f"[STARTUP]   - {u.username} (id={u.id})")
+            if final_nulls:
+                print(f"[STARTUP] ⚠️  NULL roles: {len(final_nulls)}")
+                for u in final_nulls:
+                    print(f"[STARTUP]   - {u.username} (id={u.id})")
+            if final_other:
+                print(f"[STARTUP] ⚠️  Other roles: {len(final_other)}")
+                for u in final_other:
+                    print(f"[STARTUP]   - {u.username} (id={u.id}, role='{u.role}')")
+            print("[STARTUP] ===== END FINAL STATE =====\n")
+            
             # Create or get admin user
             admin_user = db.query(User).filter(User.email == "admin@dashboard.com").first()
             if not admin_user:
