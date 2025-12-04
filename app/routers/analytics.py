@@ -67,7 +67,7 @@ def get_training_load(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id, Player.name, Player.position).all()
+    results = query.group_by(Player.id, Player.name, Player.position, Player.photo_url).all()
     
     players_load = []
     for result in results:
@@ -94,6 +94,7 @@ def get_training_load(
             "player_id": result.id,
             "player_name": result.name,
             "position": result.position,
+            "photo_url": result.photo_url,
             "session_count": result.session_count,
             "total_minutes": total_mins,
             "avg_distance_km": round(avg_dist, 2) if avg_dist else 0,
