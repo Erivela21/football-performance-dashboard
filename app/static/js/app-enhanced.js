@@ -205,29 +205,45 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeRegisterBtn = document.getElementById('close-register');
         const registerForm = document.getElementById('register-form');
 
+        console.log(`[DEBUG] Setup: registerLink=${registerLink ? 'found' : 'NOT FOUND'}, registerModal=${registerModal ? 'found' : 'NOT FOUND'}`);
+
         if (registerLink) {
             registerLink.addEventListener('click', (e) => {
                 e.preventDefault();
-                registerModal.classList.remove('hidden');
+                console.log('[DEBUG] Register link clicked, showing modal');
+                if (registerModal) {
+                    registerModal.classList.remove('hidden');
+                } else {
+                    console.error('[DEBUG] registerModal is null!');
+                }
             });
+        } else {
+            console.warn('[DEBUG] registerLink not found in DOM');
         }
 
         if (loginLink) {
             loginLink.addEventListener('click', (e) => {
                 e.preventDefault();
-                registerModal.classList.add('hidden');
+                console.log('[DEBUG] Login link clicked, hiding modal');
+                if (registerModal) {
+                    registerModal.classList.add('hidden');
+                }
             });
         }
 
         if (closeRegisterBtn) {
             closeRegisterBtn.addEventListener('click', () => {
-                registerModal.classList.add('hidden');
+                console.log('[DEBUG] Close register button clicked');
+                if (registerModal) {
+                    registerModal.classList.add('hidden');
+                }
             });
         }
 
         if (registerModal) {
             registerModal.addEventListener('click', (e) => {
                 if (e.target === registerModal) {
+                    console.log('[DEBUG] Modal backdrop clicked, hiding');
                     registerModal.classList.add('hidden');
                 }
             });
@@ -235,6 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (registerForm) {
             registerForm.addEventListener('submit', handleRegister);
+        } else {
+            console.warn('[DEBUG] registerForm not found in DOM');
         }
 
         // Navigation
@@ -358,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleRegister(e) {
         e.preventDefault();
+        console.log('[DEBUG] handleRegister called');
         const registerForm = document.getElementById('register-form');
         const usernameInput = registerForm.querySelector('input#reg-username');
         const emailInput = registerForm.querySelector('input#reg-email');
@@ -370,6 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = usernameInput.value.trim();
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
+
+        console.log(`[DEBUG] Registering user: ${username}, email: ${email}`);
 
         const originalText = btn.innerText;
         btn.innerText = 'Creating Account...';
@@ -387,6 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     password: password
                 })
             });
+
+            console.log(`[DEBUG] Register response status: ${response.status}`);
 
             if (!response.ok) {
                 const errData = await response.json().catch(() => ({}));
@@ -576,16 +599,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function renderHome() {
         // Fetch summary data
-        const [insights, schedule, players] = await Promise.all([
-            apiCall(`/analytics/insights?days=7${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`),
-            apiCall(`/schedule?limit=1${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`),
-            apiCall(`/players${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}` : ''}`)
-        ]);
+        console.log(`[DEBUG] renderHome: Loading dashboard for team=${STATE.currentTeam ? STATE.currentTeam.id : 'none'}`);
+        
+        let insights = null;
+        let schedule = [];
+        let players = [];
+        
+        try {
+            const results = await Promise.all([
+                apiCall(`/analytics/insights?days=7${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
+                    console.warn('[DEBUG] Failed to load insights:', e);
+                    return { recovery_recommendations: [], injury_prevention: [], workload_optimization: [], summary: { players_optimal_load: 0, players_needing_recovery: 0, total_players_analyzed: 0 } };
+                }),
+                apiCall(`/schedule?limit=1${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
+                    console.warn('[DEBUG] Failed to load schedule:', e);
+                    return [];
+                }),
+                apiCall(`/players${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}` : ''}`).catch(e => {
+                    console.warn('[DEBUG] Failed to load players:', e);
+                    return [];
+                })
+            ]);
+            insights = results[0];
+            schedule = results[1];
+            players = results[2];
+        } catch (e) {
+            console.error('[DEBUG] renderHome: Promise.all failed:', e);
+            throw e;
+        }
 
-        const nextMatch = schedule[0];
+        console.log(`[DEBUG] renderHome: Loaded insights=${insights ? 'ok' : 'null'}, schedule=${schedule.length}, players=${players.length}`);
+
+        const nextMatch = schedule && schedule.length > 0 ? schedule[0] : null;
         const nextMatchText = nextMatch ? new Date(nextMatch.event_date).toLocaleDateString() : 'No upcoming';
         const nextMatchOpponent = nextMatch ? nextMatch.opponent : '-';
-        const totalPlayers = players.length;
+        const totalPlayers = players ? players.length : 0;
 
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between relative z-10">
@@ -625,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <p class="text-gray-400 text-sm font-medium">Training Load</p>
-                            <h3 class="text-3xl font-bold text-white mt-1">${insights.summary.players_optimal_load} <span class="text-sm font-normal text-gray-400">Optimal</span></h3>
+                            <h3 class="text-3xl font-bold text-white mt-1">${insights && insights.summary ? insights.summary.players_optimal_load : 0} <span class="text-sm font-normal text-gray-400">Optimal</span></h3>
                         </div>
                         <div class="p-2 bg-pitch-secondary/10 rounded-lg text-pitch-secondary group-hover:bg-pitch-secondary group-hover:text-pitch-dark transition-colors">
                             <i class="fa-solid fa-bolt"></i>
@@ -633,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="flex items-center text-xs text-yellow-400">
                         <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                        <span>${insights.summary.players_needing_recovery} need recovery</span>
+                        <span>${insights && insights.summary ? insights.summary.players_needing_recovery : 0} need recovery</span>
                     </div>
                 </div>
 
@@ -641,14 +689,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <p class="text-gray-400 text-sm font-medium">Injury Risk</p>
-                            <h3 class="text-3xl font-bold text-white mt-1">${insights.injury_prevention.length > 0 ? 'High' : 'Low'}</h3>
+                            <h3 class="text-3xl font-bold text-white mt-1">${insights && insights.injury_prevention && insights.injury_prevention.length > 0 ? 'High' : 'Low'}</h3>
                         </div>
                         <div class="p-2 bg-purple-500/10 rounded-lg text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors">
                             <i class="fa-solid fa-heart-pulse"></i>
                         </div>
                     </div>
                     <div class="flex items-center text-xs text-gray-400">
-                        <span>${insights.injury_prevention.length} alerts</span>
+                        <span>${insights && insights.injury_prevention ? insights.injury_prevention.length : 0} alerts</span>
                     </div>
                 </div>
 
