@@ -3,7 +3,6 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from app.db.database import get_db
 from app.models.models import User
 from app.config import settings
 
@@ -30,28 +29,28 @@ def test_coaches():
             # Count by role
             admins = db.query(User).filter(User.role == "admin").all()
             coaches = db.query(User).filter(User.role == "coach").all()
-            nulls = db.query(User).filter(User.role == None).all()
+            nulls = db.query(User).filter(User.role is None).all()
             others = db.query(User).filter(~User.role.in_(["admin", "coach"])).all()
             
-            print(f"\n[TEST] SUMMARY:")
+            print("\n[TEST] SUMMARY:")
             print(f"  - Admins (role='admin'):   {len(admins)}")
             print(f"  - Coaches (role='coach'):  {len(coaches)}")
             print(f"  - NULL roles:              {len(nulls)}")
             print(f"  - Other roles:             {len(others)}")
             
             if len(coaches) == 0:
-                print(f"\n⚠️  WARNING: NO COACHES FOUND!")
-                print(f"[TEST] Coaches with NULL or other roles:")
+                print("\n⚠️  WARNING: NO COACHES FOUND!")
+                print("[TEST] Coaches with NULL or other roles:")
                 non_admin = db.query(User).filter(User.role != "admin").all()
                 for user in non_admin:
                     print(f"  - {user.username}: role='{user.role}'")
             
-            print(f"\n[TEST] Expected Admin Query (/admin/coaches):")
-            print(f"  Query: User.role == 'coach'")
+            print("\n[TEST] Expected Admin Query (/admin/coaches):")
+            print("  Query: User.role == 'coach'")
             print(f"  Result: {len(coaches)} coaches")
             
             if coaches:
-                print(f"\n[TEST] Coaches that would be returned:")
+                print("\n[TEST] Coaches that would be returned:")
                 for coach in coaches:
                     print(f"  - {coach.username} (ID={coach.id})")
     

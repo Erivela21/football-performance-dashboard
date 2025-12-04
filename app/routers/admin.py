@@ -190,7 +190,7 @@ def update_coach(
     # Update password if provided
     if update_data.password:
         coach.password_hash = get_password_hash(update_data.password)
-        print(f"[DEBUG] Updated password")
+        print("[DEBUG] Updated password")
     
     # Update role if provided
     if update_data.role:
