@@ -25,6 +25,128 @@ function togglePasswordVisibility(inputId, button) {
     }
 }
 
+// Admin coach management functions - attached to window for HTML event handlers
+window.openCreateCoachModal = function() {
+    document.getElementById('create-coach-modal').classList.remove('hidden');
+};
+
+window.closeCreateCoachModal = function() {
+    document.getElementById('create-coach-modal').classList.add('hidden');
+    document.getElementById('create-coach-form').reset();
+    document.getElementById('create-coach-error').classList.add('hidden');
+};
+
+window.submitCreateCoach = async function(e) {
+    e.preventDefault();
+    const errorDiv = document.getElementById('create-coach-error');
+    errorDiv.classList.add('hidden');
+    
+    const username = document.getElementById('new-coach-username').value;
+    const email = document.getElementById('new-coach-email').value;
+    const password = document.getElementById('new-coach-password').value;
+    
+    try {
+        const response = await fetch('/admin/coaches', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ username, email, password })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to create coach');
+        }
+        
+        window.closeCreateCoachModal();
+        // Reload admin panel
+        const event = new HashChangeEvent('hashchange', { newURL: window.location.href.replace(/#.*/, '#admin') });
+        window.location.hash = '#admin';
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('hidden');
+    }
+};
+
+window.editCoach = function(id, username, email) {
+    document.getElementById('edit-coach-id').value = id;
+    document.getElementById('edit-coach-username').value = username;
+    document.getElementById('edit-coach-email').value = email;
+    document.getElementById('edit-coach-password').value = '';
+    document.getElementById('edit-coach-error').classList.add('hidden');
+    document.getElementById('edit-coach-modal').classList.remove('hidden');
+};
+
+window.closeEditCoachModal = function() {
+    document.getElementById('edit-coach-modal').classList.add('hidden');
+    document.getElementById('edit-coach-form').reset();
+    document.getElementById('edit-coach-error').classList.add('hidden');
+};
+
+window.submitEditCoach = async function(e) {
+    e.preventDefault();
+    const errorDiv = document.getElementById('edit-coach-error');
+    errorDiv.classList.add('hidden');
+    
+    const id = document.getElementById('edit-coach-id').value;
+    const username = document.getElementById('edit-coach-username').value;
+    const email = document.getElementById('edit-coach-email').value;
+    const password = document.getElementById('edit-coach-password').value;
+    
+    try {
+        const payload = { username, email };
+        if (password) payload.password = password; // Only send if provided
+        
+        const response = await fetch(`/admin/coaches/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to update coach');
+        }
+        
+        window.closeEditCoachModal();
+        // Reload admin panel
+        window.location.hash = '#admin';
+    } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.classList.remove('hidden');
+    }
+};
+
+window.deleteCoach = async function(id, username) {
+    if (!confirm(`Are you sure you want to delete coach "${username}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/admin/coaches/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to delete coach');
+        }
+        
+        // Reload admin panel
+        window.location.hash = '#admin';
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration & State ---
     const API_BASE = ''; // Relative path
@@ -403,7 +525,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'training-load': await renderTrainingLoad(); break;
                 case 'injury-risk': await renderInjuryRisk(); break;
                 case 'schedule': await renderSchedule(); break;
-                default: await renderHome();
+                case 'admin': await renderAdmin(); break;
+                default: STATE.user.role === 'admin' ? await renderAdmin() : await renderHome();
             }
         } catch (e) {
             els.pageContent.innerHTML = `<div class="text-red-500 p-4">Error loading page: ${e.message}</div>`;
@@ -751,6 +874,118 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 `).join('')}
+            </div>
+        `;
+    }
+
+    async function renderAdmin() {
+        // Load coaches list
+        let coaches = [];
+        try {
+            const response = await fetch('/admin/coaches', {
+                headers: {
+                    'Authorization': `Bearer ${STATE.token}`
+                }
+            });
+            if (response.ok) {
+                coaches = await response.json();
+            }
+        } catch (err) {
+            console.error('Failed to load coaches:', err);
+        }
+        
+        const coachesHTML = coaches.map(coach => `
+            <tr class="border-b border-gray-700 hover:bg-white/5 transition">
+                <td class="px-6 py-4 text-white font-medium">${coach.username}</td>
+                <td class="px-6 py-4 text-gray-400">${coach.email}</td>
+                <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-sm font-medium ${coach.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${coach.is_active ? 'Active' : 'Inactive'}</span></td>
+                <td class="px-6 py-4 text-right space-x-2">
+                    <button onclick="window.editCoach(${coach.id}, '${coach.username}', '${coach.email}')" class="px-3 py-1 text-sm bg-pitch-accent/20 text-pitch-accent hover:bg-pitch-accent/30 rounded-lg transition">Edit</button>
+                    <button onclick="window.deleteCoach(${coach.id}, '${coach.username}')" class="px-3 py-1 text-sm bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition">Delete</button>
+                </td>
+            </tr>
+        `).join('');
+        
+        els.pageContent.innerHTML = `
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-1">Admin Panel</h2>
+                        <p class="text-gray-400">Manage all coaches and their accounts</p>
+                    </div>
+                    <button onclick="window.openCreateCoachModal()" class="px-6 py-3 bg-gradient-to-r from-pitch-accent to-emerald-600 text-pitch-dark font-bold rounded-xl hover:shadow-[0_0_20px_rgba(0,255,136,0.4)] transition">
+                        <i class="fa-solid fa-plus mr-2"></i>Create Coach
+                    </button>
+                </div>
+                
+                <div class="glass-panel p-6 rounded-xl border border-gray-700">
+                    <table class="w-full">
+                        <thead class="border-b border-gray-700">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-400">Username</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-400">Email</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-400">Status</th>
+                                <th class="px-6 py-3 text-right text-sm font-semibold text-gray-400">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${coachesHTML || '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-400">No coaches yet</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Create Coach Modal -->
+            <div id="create-coach-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+                <div class="bg-pitch-light border border-gray-700 rounded-2xl p-8 w-full max-w-md mx-4 space-y-6">
+                    <h3 class="text-2xl font-bold text-white">Create New Coach</h3>
+                    <form id="create-coach-form" class="space-y-4" onsubmit="window.submitCreateCoach(event)">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                            <input type="text" id="new-coach-username" required class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-pitch-accent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                            <input type="email" id="new-coach-email" required class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-pitch-accent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Password</label>
+                            <input type="password" id="new-coach-password" required class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-pitch-accent">
+                        </div>
+                        <div id="create-coach-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm"></div>
+                        <div class="flex gap-3 justify-end pt-4">
+                            <button type="button" onclick="window.closeCreateCoachModal()" class="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:bg-white/5">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-pitch-accent text-pitch-dark font-bold rounded-lg hover:shadow-lg">Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Edit Coach Modal -->
+            <div id="edit-coach-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+                <div class="bg-pitch-light border border-gray-700 rounded-2xl p-8 w-full max-w-md mx-4 space-y-6">
+                    <h3 class="text-2xl font-bold text-white">Edit Coach</h3>
+                    <form id="edit-coach-form" class="space-y-4" onsubmit="window.submitEditCoach(event)">
+                        <input type="hidden" id="edit-coach-id">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                            <input type="text" id="edit-coach-username" required class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-pitch-accent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Email</label>
+                            <input type="email" id="edit-coach-email" required class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-pitch-accent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">New Password (leave blank to keep)</label>
+                            <input type="password" id="edit-coach-password" class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-pitch-accent">
+                        </div>
+                        <div id="edit-coach-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm"></div>
+                        <div class="flex gap-3 justify-end pt-4">
+                            <button type="button" onclick="window.closeEditCoachModal()" class="px-4 py-2 rounded-lg border border-gray-700 text-gray-400 hover:bg-white/5">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-pitch-accent text-pitch-dark font-bold rounded-lg hover:shadow-lg">Save</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         `;
     }
@@ -1235,8 +1470,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize profile display on page load
     function updateProfileDisplay() {
         if (STATE.user?.username) {
-            document.getElementById('profile-name').textContent = `Coach ${STATE.user.username}`;
-            document.getElementById('profile-avatar').src = `https://ui-avatars.com/api/?name=${STATE.user.username}&background=00ff88&color=0a0f1c`;
+            const roleLabel = STATE.user.role === 'admin' ? 'Admin' : 'Coach';
+            document.getElementById('profile-name').textContent = `${roleLabel} ${STATE.user.username}`;
+            document.getElementById('profile-avatar').src = `https://ui-avatars.com/api/?name=${STATE.user.username}&background=${STATE.user.role === 'admin' ? 'ff3366' : '00ff88'}&color=0a0f1c`;
+            
+            // Show admin nav link if user is admin
+            const adminLink = document.getElementById('admin-nav-link');
+            if (STATE.user.role === 'admin') {
+                adminLink.classList.remove('hidden');
+                adminLink.classList.add('flex');
+            } else {
+                adminLink.classList.add('hidden');
+                adminLink.classList.remove('flex');
+            }
         }
     }
 });
