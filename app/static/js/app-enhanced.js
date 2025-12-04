@@ -306,7 +306,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             STATE.token = data.access_token;
-            STATE.user = { username: username };
+            
+            // Get full user info including role
+            const userResponse = await fetch(`${API_BASE}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${data.access_token}` }
+            });
+            
+            if (userResponse.ok) {
+                const userInfo = await userResponse.json();
+                STATE.user = { 
+                    username: userInfo.username,
+                    email: userInfo.email,
+                    role: userInfo.role
+                };
+            } else {
+                STATE.user = { username: username };
+            }
             
             localStorage.setItem('token', STATE.token);
             localStorage.setItem('user', JSON.stringify(STATE.user));
