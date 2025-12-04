@@ -532,6 +532,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Navigation & Routing ---
     async function navigateTo(page) {
+        // SAFEGUARD: Prevent coaches from accessing admin page
+        if (page === 'admin' && STATE.user.role !== 'admin') {
+            console.warn(`[DEBUG] Coach ${STATE.user.username} tried to access admin panel - redirecting to home`);
+            page = 'home';
+        }
+        
         // Update Sidebar Active State
         els.navItems.forEach(item => {
             const href = item.getAttribute('href').substring(1);
@@ -548,6 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
         els.pageContent.innerHTML = '<div class="flex justify-center p-10"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-pitch-accent"></i></div>';
         
         try {
+            console.log(`[DEBUG] Navigating to: ${page} (user role: ${STATE.user.role})`);
             switch(page) {
                 case 'home': await renderHome(); break;
                 case 'teams': await renderTeams(); break;
@@ -560,6 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 default: STATE.user.role === 'admin' ? await renderAdmin() : await renderHome();
             }
         } catch (e) {
+            console.error(`[DEBUG] Error navigating to ${page}:`, e);
             els.pageContent.innerHTML = `<div class="text-red-500 p-4">Error loading page: ${e.message}</div>`;
         }
     }

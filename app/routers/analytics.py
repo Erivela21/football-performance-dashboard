@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.db.database import get_db
-from app.models.models import Player, TrainingSession, SessionStats, User
+from app.models.models import Player, TrainingSession, SessionStats, User, Team
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -19,22 +19,35 @@ def get_training_load(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get training load analysis for all players. Coaches only."""
-    print(f"[DEBUG] get_training_load called by user {current_user.username} with role='{current_user.role}'")
+    """Get training load analysis for players. Coaches only - only their teams."""
+    print(f"[DEBUG] get_training_load called by coach {current_user.username} (id={current_user.id})")
     if current_user.role == 'admin':
         print(f"[DEBUG] Blocking admin user {current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admins cannot access analytics"
         )
-    print(f"[DEBUG] Allowing coach {current_user.username} to access training-load analytics")
+    
     cutoff_date = datetime.utcnow() - timedelta(days=days)
     
-    # Query to get player training load
+    # Verify team belongs to current user if specified
+    if team_id:
+        team = db.query(Team).filter(Team.id == team_id, Team.user_id == current_user.id).first()
+        if not team:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have access to this team"
+            )
+        print(f"[DEBUG] Coach {current_user.username} analyzing training load for team {team_id}")
+    else:
+        print(f"[DEBUG] Coach {current_user.username} analyzing training load for all their teams")
+    
+    # Query to get player training load - only from current user's teams
     query = db.query(
         Player.id,
         Player.name,
         Player.position,
+        Player.photo_url,
         func.count(TrainingSession.id).label('session_count'),
         func.sum(TrainingSession.duration_minutes).label('total_minutes'),
         func.avg(SessionStats.distance_km).label('avg_distance'),
@@ -42,10 +55,13 @@ def get_training_load(
         func.avg(SessionStats.avg_heart_rate).label('avg_hr')
     ).join(
         TrainingSession, Player.id == TrainingSession.player_id
+    ).join(
+        Team, Player.team_id == Team.id
     ).outerjoin(
         SessionStats, TrainingSession.id == SessionStats.session_id
     ).filter(
-        TrainingSession.session_date >= cutoff_date
+        TrainingSession.session_date >= cutoff_date,
+        Team.user_id == current_user.id  # Only current user's teams
     )
     
     if team_id:

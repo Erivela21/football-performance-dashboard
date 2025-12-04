@@ -14,11 +14,19 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 def verify_admin(current_user: User = Depends(get_current_user)):
     """Verify that current user is an admin."""
-    if current_user.role != "admin":
+    print(f"[DEBUG] verify_admin called for user: {current_user.username}, role='{current_user.role}' (type: {type(current_user.role)})")
+    
+    # Check if role is 'admin' (handle None, empty string, whitespace)
+    is_admin = current_user.role and current_user.role.strip() == "admin"
+    
+    if not is_admin:
+        print(f"[DEBUG] DENIED: User {current_user.username} has role='{current_user.role}' (not 'admin')")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"
         )
+    
+    print(f"[DEBUG] ALLOWED: User {current_user.username} is admin")
     return current_user
 
 
@@ -70,35 +78,24 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
     # Debug: Count all users first
     total_users = db.query(User).count()
     print("[DEBUG] ===== COACHES LIST REQUESTED =====")
+    print(f"[DEBUG] Admin user: {admin.username} (role='{admin.role}')")
     print(f"[DEBUG] Total users in database: {total_users}")
     
     # Get all users and show their roles
     all_users = db.query(User).all()
     print("[DEBUG] All users:")
     for user in all_users:
-        print(f"[DEBUG]   {user.id}: {user.username} | role='{user.role}' | active={user.is_active}")
+        print(f"[DEBUG]   {user.id}: {user.username:20s} | role='{user.role}' | active={user.is_active}")
     
-    # Fix: Filter for coaches - handle NULL roles by fixing them in DB
-    # Include users where role is 'coach' OR role is NULL (legacy data - will be fixed)
+    # Get coaches - MUST have role='coach' (not NULL, not admin)
     coaches = db.query(User).filter(
-        (User.role == "coach") | (User.role.is_(None))
-    ).filter(
-        User.username != "admin"  # Exclude admin user
+        User.role == "coach"
     ).all()
     
-    # Fix: Update any NULL roles to 'coach' to prevent future issues
+    print(f"[DEBUG] Found {len(coaches)} coaches (role='coach' exactly)")
     for coach in coaches:
-        if coach.role is None or coach.role == "":
-            print(f"[DEBUG] ✓ Fixing coach {coach.username}: setting role to 'coach' (was: {coach.role})")
-            coach.role = "coach"
-            db.add(coach)
+        print(f"[DEBUG]   - {coach.username:20s} (id={coach.id}, role='{coach.role}')")
     
-    if coaches:
-        db.commit()
-    
-    print(f"[DEBUG] Filtered coaches (role='coach' or role=NULL): {len(coaches)} found")
-    for coach in coaches:
-        print(f"[DEBUG]   - {coach.username} (id={coach.id}, role={coach.role})")
     print("[DEBUG] ===== END =====\n")
     
     return coaches

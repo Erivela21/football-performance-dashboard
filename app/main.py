@@ -160,6 +160,28 @@ async def lifespan(app: FastAPI):
         try:
             db = next(get_db())
             
+            # FIX ALL ROLES - Make sure every user has a proper role
+            print("\n[STARTUP] ===== FIXING ALL USER ROLES =====")
+            all_users = db.query(User).all()
+            print(f"[STARTUP] Total users in database: {len(all_users)}")
+            
+            for user in all_users:
+                if user.role is None or user.role == "" or user.role.strip() == "":
+                    # Determine correct role
+                    if user.username == "admin" or user.email == "admin@dashboard.com":
+                        new_role = "admin"
+                    else:
+                        new_role = "coach"
+                    
+                    print(f"[STARTUP] ✓ Fixing {user.username}: role '{user.role}' → '{new_role}'")
+                    user.role = new_role
+                    db.add(user)
+                else:
+                    print(f"[STARTUP] OK: {user.username} has role='{user.role}'")
+            
+            db.commit()
+            print("[STARTUP] ===== ALL ROLES FIXED =====\n")
+            
             # Create or get admin user
             admin_user = db.query(User).filter(User.email == "admin@dashboard.com").first()
             if not admin_user:
@@ -174,6 +196,12 @@ async def lifespan(app: FastAPI):
                 db.commit()
                 logger.info("Admin user created: admin@dashboard.com / Admin1234")
             else:
+                # Make sure admin has admin role
+                if admin_user.role != "admin":
+                    print(f"[STARTUP] Fixing admin user role: '{admin_user.role}' → 'admin'")
+                    admin_user.role = "admin"
+                    db.add(admin_user)
+                    db.commit()
                 logger.info("Admin user already exists")
             
             # Assign orphaned teams (with NULL user_id) to admin user if any exist
