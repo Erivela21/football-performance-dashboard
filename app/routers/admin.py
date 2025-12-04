@@ -93,7 +93,7 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
         User.role == "coach"
     ).all()
     
-    print(f"[DEBUG] Query: User.role == 'coach'")
+    print("[DEBUG] Query: User.role == 'coach'")
     print(f"[DEBUG] Found {len(coaches)} users with role='coach'")
     for coach in coaches:
         print(f"[DEBUG]   - ID={coach.id}, username={coach.username}, role='{coach.role}', email={coach.email}, active={coach.is_active}")

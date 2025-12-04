@@ -207,7 +207,7 @@ async def lifespan(app: FastAPI):
             print("[STARTUP] ===== FINAL STATE AFTER ROLE FIXING =====")
             final_admins = db.query(User).filter(User.role == "admin").all()
             final_coaches = db.query(User).filter(User.role == "coach").all()
-            final_nulls = db.query(User).filter(User.role == None).all()
+            final_nulls = db.query(User).filter(User.role is None).all()
             final_other = db.query(User).filter(~User.role.in_(["admin", "coach"])).all()
             
             print(f"[STARTUP] Admins (role='admin'): {len(final_admins)}")
