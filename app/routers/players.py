@@ -79,11 +79,26 @@ def create_player(player: PlayerCreate, current_user: User = Depends(get_current
                 )
         
         logger.info(f"Coach {current_user.username} creating player with data: {player}")
-        db_player = Player(**player.model_dump())
+        
+        # Extract photo if provided
+        player_data = player.model_dump()
+        photo_data = player_data.get('photo_url')
+        
+        if photo_data:
+            print(f"[DEBUG] Creating player with photo ({len(photo_data)} bytes) - STORING IN CLOUD DATABASE")
+        
+        # Create and save to database
+        db_player = Player(**player_data)
         db.add(db_player)
         db.commit()
         db.refresh(db_player)
-        print(f"[DEBUG] Player created: {db_player.name} for coach {current_user.username}")
+        
+        # VERIFY photo persisted in cloud database
+        if db_player.photo_url:
+            print(f"✓ VERIFIED: Player {db_player.id} '{db_player.name}' created with photo ({len(db_player.photo_url)} bytes) - PERSISTED IN CLOUD DATABASE")
+        else:
+            print(f"[DEBUG] Player {db_player.id} '{db_player.name}' created without photo")
+        
         return db_player
     except Exception as e:
         logger.error(f"Error creating player: {e}", exc_info=True)
@@ -94,7 +109,7 @@ def create_player(player: PlayerCreate, current_user: User = Depends(get_current
 def update_player(
     player_id: int, player: PlayerUpdate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
-    """Update an existing player (user's player only)."""
+    """Update an existing player (user's player only) with bulletproof photo persistence."""
     # Verify ownership
     db_player = db.query(Player).join(Team, Player.team_id == Team.id).filter(
         Player.id == player_id,
@@ -107,26 +122,39 @@ def update_player(
             detail="Player not found or you don't have access",
         )
 
-    # Log photo persistence
-    existing_photo = db_player.photo_url
     print(f"[DEBUG] Updating player {player_id} '{db_player.name}' for coach {current_user.username}")
-    print(f"[DEBUG] Existing photo: {'YES (' + str(len(existing_photo)) + ' bytes)' if existing_photo else 'NO'}")
-
+    
+    # BULLETPROOF PHOTO PERSISTENCE IN CLOUD DATABASE
+    existing_photo = db_player.photo_url
+    if existing_photo:
+        print(f"[DEBUG] Existing photo in cloud database: YES ({len(existing_photo)} bytes)")
+    
     update_data = player.model_dump(exclude_unset=True)
     print(f"[DEBUG] Update fields received: {list(update_data.keys())}")
     
+    # CRITICAL: If no photo_url in update, PRESERVE existing photo from cloud database
+    if 'photo_url' not in update_data and existing_photo:
+        print(f"[DEBUG] ✓ PRESERVING photo from cloud database ({len(existing_photo)} bytes)")
+        update_data['photo_url'] = existing_photo
+    elif 'photo_url' in update_data and update_data['photo_url']:
+        print(f"[DEBUG] New photo provided ({len(update_data['photo_url'])} bytes) - will replace in cloud database")
+    
+    # Apply all updates to the player object
     for key, value in update_data.items():
         setattr(db_player, key, value)
     
-    # Confirm what photo will be saved
-    if 'photo_url' in update_data:
-        print(f"[DEBUG] New photo_url in request: {'YES (' + str(len(update_data['photo_url'])) + ' bytes)' if update_data['photo_url'] else 'CLEARED'}")
-    else:
-        print(f"[DEBUG] No photo_url in request - keeping existing: {'YES' if db_player.photo_url else 'NO'}")
-
+    # FORCE SAVE to cloud database
+    db.add(db_player)
     db.commit()
     db.refresh(db_player)
-    print(f"[DEBUG] After commit, player {player_id} has photo: {'YES' if db_player.photo_url else 'NO'}")
+    
+    # VERIFY photo persisted in cloud database
+    final_photo = db_player.photo_url
+    if final_photo:
+        print(f"✓ VERIFIED: Player {player_id} photo PERSISTED IN CLOUD DATABASE ({len(final_photo)} bytes)")
+    else:
+        print(f"[DEBUG] Player {player_id} has no photo")
+    
     return db_player
 
 

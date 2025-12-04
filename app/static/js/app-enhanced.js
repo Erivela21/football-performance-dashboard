@@ -153,8 +153,8 @@ window.deleteCoach = async function(id, username) {
 
 window.refreshCoachesList = async function() {
     console.log('🔄 Refreshing coaches list...');
-    // Navigate to admin to reload the coaches
-    window.location.hash = '#admin';
+    // Force re-render of admin panel by calling renderAdmin directly
+    await renderAdmin();
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1032,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="space-y-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-3xl font-bold text-white mb-1">Admin Panel</h2>
+                        <h2 class="text-3xl font-bold text-white mb-1">ADMIN PANEL</h2>
                         <p class="text-gray-400">Manage all coaches and their accounts</p>
                     </div>
                     <div class="flex gap-3">
