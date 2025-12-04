@@ -89,7 +89,14 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
         print(f"[DEBUG]   {user.id}: {user.username:20s} | role={role_display:10s} | email={user.email} | active={user.is_active}")
     
     # Get coaches - MUST have role='coach' (not NULL, not admin, case-insensitive)
-    coaches = db.query(User).filter(
+    # Explicitly select only the fields we need to avoid serializing relationships
+    coaches = db.query(
+        User.id,
+        User.username,
+        User.email,
+        User.role,
+        User.is_active
+    ).filter(
         User.role == "coach"
     ).all()
     
@@ -110,7 +117,19 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
     
     print("[DEBUG] ===== END COACHES LIST =====\n")
     
-    return coaches
+    # Convert Row objects to CoachListResponse for serialization
+    result = []
+    for row in coaches:
+        coach_response = CoachListResponse(
+            id=row.id,
+            username=row.username,
+            email=row.email,
+            role=row.role,
+            is_active=row.is_active
+        )
+        result.append(coach_response)
+    
+    return result
 
 
 @router.get("/coaches/{coach_id}", response_model=UserResponse)

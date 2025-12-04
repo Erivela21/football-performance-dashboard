@@ -248,11 +248,9 @@ class TeamAssignment(BaseModel):
 
 
 class CoachListResponse(BaseModel):
-    """Schema for listing coaches with their teams."""
+    """Schema for listing coaches."""
     id: int
     username: str
     email: Optional[str]
     role: str
     is_active: bool
-    
-    model_config = ConfigDict(from_attributes=True)
