@@ -160,7 +160,7 @@ async def lifespan(app: FastAPI):
         try:
             db = next(get_db())
             
-            # Create or get demo admin user
+            # Create or get admin user
             admin_user = db.query(User).filter(User.email == "admin@dashboard.com").first()
             if not admin_user:
                 admin_user = User(
@@ -176,28 +176,12 @@ async def lifespan(app: FastAPI):
             else:
                 logger.info("Admin user already exists")
             
-            # Create or get demo coach user
-            demo_user = db.query(User).filter(User.email == "demo@coach.com").first()
-            if not demo_user:
-                demo_user = User(
-                    username="demo",
-                    email="demo@coach.com",
-                    password_hash=get_password_hash("Demo1234"),
-                    role="coach",
-                    is_active=1
-                )
-                db.add(demo_user)
-                db.commit()
-                logger.info("Demo user created: demo@coach.com / Demo1234")
-            else:
-                logger.info("Demo user already exists")
-            
-            # Assign orphaned teams (with NULL user_id) to demo user
+            # Assign orphaned teams (with NULL user_id) to admin user if any exist
             orphaned_teams = db.query(Team).filter(Team.user_id is None).all()
             if orphaned_teams:
-                logger.info(f"Found {len(orphaned_teams)} teams without user_id, assigning to demo user...")
+                logger.info(f"Found {len(orphaned_teams)} teams without user_id, assigning to admin user...")
                 for team in orphaned_teams:
-                    team.user_id = demo_user.id
+                    team.user_id = admin_user.id
                     db.add(team)
                 db.commit()
                 logger.info(f"Assigned {len(orphaned_teams)} teams to demo user")
