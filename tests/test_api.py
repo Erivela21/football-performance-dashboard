@@ -47,6 +47,7 @@ class TestHealthEndpoint:
     @staticmethod
     def get_coach_token(client):
         """Helper to create a coach and return auth token."""
+        # Try to register - if user exists, just login
         user_data = {
             "username": "testcoach",
             "email": "coach@example.com",
@@ -60,6 +61,16 @@ class TestHealthEndpoint:
         }
         login_response = client.post("/auth/login", json=login_data)
         return login_response.json()["access_token"]
+    
+    @staticmethod
+    def create_team(client, token):
+        """Helper to create a team."""
+        team_data = {
+            "name": "Test Team",
+            "division": "Division 1"
+        }
+        response = client.post("/teams", json=team_data, headers={"Authorization": f"Bearer {token}"})
+        return response.json()["id"]
 
     def test_health_check(self, client):
         """Test health check returns healthy status."""
@@ -94,11 +105,13 @@ class TestHealthEndpoint:
     def test_create_player(self, client):
         """Test creating a new player."""
         token = self.get_coach_token(client)
+        team_id = self.create_team(client, token)
         
         player_data = {
             "name": "John Doe",
             "position": "Forward",
             "birth_date": "2000-12-03",
+            "team_id": team_id,
         }
         response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         assert response.status_code == 201
@@ -110,8 +123,9 @@ class TestHealthEndpoint:
     def test_get_player(self, client):
         """Test getting a specific player."""
         token = self.get_coach_token(client)
+        team_id = self.create_team(client, token)
         
-        player_data = {"name": "Jane Smith", "position": "Midfielder"}
+        player_data = {"name": "Jane Smith", "position": "Midfielder", "team_id": team_id}
         create_response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         player_id = create_response.json()["id"]
 
@@ -128,8 +142,9 @@ class TestHealthEndpoint:
     def test_update_player(self, client):
         """Test updating a player."""
         token = self.get_coach_token(client)
+        team_id = self.create_team(client, token)
         
-        player_data = {"name": "Original Name", "position": "Defender"}
+        player_data = {"name": "Original Name", "position": "Defender", "team_id": team_id}
         create_response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         player_id = create_response.json()["id"]
 
@@ -142,8 +157,9 @@ class TestHealthEndpoint:
     def test_delete_player(self, client):
         """Test deleting a player."""
         token = self.get_coach_token(client)
+        team_id = self.create_team(client, token)
         
-        player_data = {"name": "To Delete", "position": "Goalkeeper"}
+        player_data = {"name": "To Delete", "position": "Goalkeeper", "team_id": team_id}
         create_response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         player_id = create_response.json()["id"]
 
@@ -173,6 +189,16 @@ class TestSessionsEndpoint:
         }
         login_response = client.post("/auth/login", json=login_data)
         return login_response.json()["access_token"]
+    
+    @staticmethod
+    def create_team(client, token):
+        """Helper to create a team."""
+        team_data = {
+            "name": "Sessions Test Team",
+            "division": "Division 1"
+        }
+        response = client.post("/teams", json=team_data, headers={"Authorization": f"Bearer {token}"})
+        return response.json()["id"]
 
     def test_get_sessions_empty(self, client):
         """Test getting sessions when none exist."""
@@ -183,8 +209,9 @@ class TestSessionsEndpoint:
     def test_create_session(self, client):
         """Test creating a training session."""
         token = self.get_coach_token(client)
+        team_id = self.create_team(client, token)
         
-        player_data = {"name": "Test Player", "position": "Forward"}
+        player_data = {"name": "Test Player", "position": "Forward", "team_id": team_id}
         player_response = client.post("/players", json=player_data, headers={"Authorization": f"Bearer {token}"})
         player_id = player_response.json()["id"]
 
@@ -232,6 +259,16 @@ class TestStatsEndpoint:
         }
         login_response = client.post("/auth/login", json=login_data)
         return login_response.json()["access_token"]
+    
+    @staticmethod
+    def create_team(client, token):
+        """Helper to create a team."""
+        team_data = {
+            "name": "Stats Test Team",
+            "division": "Division 1"
+        }
+        response = client.post("/teams", json=team_data, headers={"Authorization": f"Bearer {token}"})
+        return response.json()["id"]
 
     def test_get_stats_empty(self, client):
         """Test getting stats when none exist."""
@@ -242,9 +279,10 @@ class TestStatsEndpoint:
     def test_create_stats(self, client):
         """Test creating session statistics."""
         token = self.get_coach_token(client)
+        team_id = self.create_team(client, token)
         
         player_response = client.post(
-            "/players", json={"name": "Test Player", "position": "Forward"}, headers={"Authorization": f"Bearer {token}"}
+            "/players", json={"name": "Test Player", "position": "Forward", "team_id": team_id}, headers={"Authorization": f"Bearer {token}"}
         )
         player_id = player_response.json()["id"]
 
