@@ -71,12 +71,26 @@ def update_player(
             detail=f"Player with id {player_id} not found",
         )
 
+    # Log photo persistence
+    existing_photo = db_player.photo_url
+    print(f"[DEBUG] Updating player {player_id} '{db_player.name}'")
+    print(f"[DEBUG] Existing photo: {'YES (' + str(len(existing_photo)) + ' bytes)' if existing_photo else 'NO'}")
+
     update_data = player.model_dump(exclude_unset=True)
+    print(f"[DEBUG] Update fields received: {list(update_data.keys())}")
+    
     for key, value in update_data.items():
         setattr(db_player, key, value)
+    
+    # Confirm what photo will be saved
+    if 'photo_url' in update_data:
+        print(f"[DEBUG] New photo_url in request: {'YES (' + str(len(update_data['photo_url'])) + ' bytes)' if update_data['photo_url'] else 'CLEARED'}")
+    else:
+        print(f"[DEBUG] No photo_url in request - keeping existing: {'YES' if db_player.photo_url else 'NO'}")
 
     db.commit()
     db.refresh(db_player)
+    print(f"[DEBUG] After commit, player {player_id} has photo: {'YES' if db_player.photo_url else 'NO'}")
     return db_player
 
 

@@ -324,12 +324,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (userResponse.ok) {
                 const userInfo = await userResponse.json();
+                const role = userInfo.role && userInfo.role.trim() !== "" ? userInfo.role : "coach";
+                console.log(`[DEBUG] Login successful: ${userInfo.username}, role='${role}'`);
                 STATE.user = { 
                     username: userInfo.username,
                     email: userInfo.email,
-                    role: userInfo.role || 'coach'
+                    role: role
                 };
             } else {
+                console.warn(`[DEBUG] /auth/me failed, defaulting role to 'coach'`);
                 STATE.user = { username: username, role: 'coach' };
             }
             
@@ -340,6 +343,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadInitialData();
             // Navigate to admin if admin, home if coach
             const initialPage = STATE.user.role === 'admin' ? 'admin' : 'home';
+            console.log(`[DEBUG] Login redirect: navigating to '${initialPage}' (role='${STATE.user.role}')`);
             navigateTo(initialPage);
 
         } catch (error) {
@@ -1142,9 +1146,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('player-photo').onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
+                // Validate file size (max 5MB as base64)
+                const maxSize = 5 * 1024 * 1024;  // 5MB
+                if (file.size > maxSize) {
+                    alert('Photo size must be less than 5MB');
+                    e.target.value = '';
+                    return;
+                }
+                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     window.playerPhotoData = event.target.result;
+                    console.log(`[DEBUG] Player photo loaded: ${(window.playerPhotoData.length / 1024).toFixed(2)}KB`);
                     document.getElementById('player-photo-preview').innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
                     document.getElementById('player-photo-clear').classList.remove('hidden');
                 };
@@ -1236,10 +1249,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = document.getElementById('edit-player-modal');
         modal.classList.remove('hidden');
         
-        // Store current player ID for submission
+        // Store current player ID and EXISTING photo for submission
         window.editingPlayerId = player.id;
         window.editPlayerPhotoData = null;
-        
+        window.existingPlayerPhoto = player.photo_url || null;  // Store existing photo to preserve on edit
+        console.log(`[DEBUG] Opening edit modal for player ${player.id} with existing photo: ${window.existingPlayerPhoto ? 'YES (' + window.existingPlayerPhoto.substring(0, 50) + '...)' : 'NO'}`);\n        
         // Populate form with current player data
         document.getElementById('edit-player-name').value = player.name || '';
         document.getElementById('edit-player-surname').value = player.surname || '';
@@ -1275,9 +1289,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('edit-player-photo').onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
+                // Validate file size (max 5MB as base64)
+                const maxSize = 5 * 1024 * 1024;  // 5MB
+                if (file.size > maxSize) {
+                    alert('Photo size must be less than 5MB');
+                    e.target.value = '';
+                    return;
+                }
+                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     window.editPlayerPhotoData = event.target.result;
+                    console.log(`[DEBUG] Edit player photo loaded: ${(window.editPlayerPhotoData.length / 1024).toFixed(2)}KB`);
                     document.getElementById('edit-player-photo-preview').innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
                     document.getElementById('edit-player-photo-clear').classList.remove('hidden');
                 };
@@ -1316,10 +1339,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     birth_date: birthDate || null
                 };
                 
-                // Only include photo_url if a new photo was uploaded
-                // If editPlayerPhotoData is set, use it. Otherwise don't include photo_url (keeps existing)
+                // Always include photo_url: use new if uploaded, otherwise preserve existing
                 if (window.editPlayerPhotoData) {
                     playerData.photo_url = window.editPlayerPhotoData;
+                    console.log(`[DEBUG] Update player ${window.editingPlayerId}: NEW photo (${window.editPlayerPhotoData.length} bytes)`);
+                } else if (window.existingPlayerPhoto) {
+                    playerData.photo_url = window.existingPlayerPhoto;
+                    console.log(`[DEBUG] Update player ${window.editingPlayerId}: PRESERVING existing photo (${window.existingPlayerPhoto.length} bytes)`);
+                } else {
+                    console.log(`[DEBUG] Update player ${window.editingPlayerId}: NO photo`);
                 }
                 
                 await apiCall(`/players/${window.editingPlayerId}`, 'PUT', playerData);

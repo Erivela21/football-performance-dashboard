@@ -51,8 +51,17 @@ def login(form_data: UserCreate, db: Session = Depends(get_db)):
         if not verify_password(form_data.password, user.password_hash):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+        # FIX: Ensure role is set (migrate legacy NULL roles to 'coach')
+        if user.role is None or user.role == "":
+            print(f"[DEBUG] Fixing legacy user {user.username}: setting role from '{user.role}' to 'coach'")
+            user.role = "coach" if user.username != "admin" else "admin"
+            db.add(user)
+            db.commit()
+            print(f"[DEBUG] ✓ User {user.username} role fixed to '{user.role}'")
+
         access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
         access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+        print(f"[DEBUG] Login successful: {user.username} with role='{user.role}'")
         return {"access_token": access_token, "token_type": "bearer"}
     except HTTPException:
         raise
@@ -102,5 +111,12 @@ def update_profile(
 @router.get("/me", response_model=UserResponse)
 def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information including role."""
+    print(f"[DEBUG] /auth/me called for user: {current_user.username}, role='{current_user.role}', id={current_user.id}")
+    
+    # Final safety check: if role is still NULL, set it
+    if not current_user.role:
+        print(f"[DEBUG] WARNING: User {current_user.username} still has NULL role, this shouldn't happen!")
+        current_user.role = "coach" if current_user.username != "admin" else "admin"
+    
     return current_user
 

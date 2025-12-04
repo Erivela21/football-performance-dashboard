@@ -78,9 +78,25 @@ def list_coaches(admin: User = Depends(verify_admin), db: Session = Depends(get_
     for user in all_users:
         print(f"[DEBUG]   {user.id}: {user.username} | role='{user.role}' | active={user.is_active}")
     
-    # Now get coaches
-    coaches = db.query(User).filter(User.role == "coach").all()
-    print(f"[DEBUG] Filtered coaches (role='coach'): {len(coaches)} found")
+    # Fix: Filter for coaches - handle NULL roles by fixing them in DB
+    # Include users where role is 'coach' OR role is NULL (legacy data - will be fixed)
+    coaches = db.query(User).filter(
+        (User.role == "coach") | (User.role.is_(None))
+    ).filter(
+        User.username != "admin"  # Exclude admin user
+    ).all()
+    
+    # Fix: Update any NULL roles to 'coach' to prevent future issues
+    for coach in coaches:
+        if coach.role is None or coach.role == "":
+            print(f"[DEBUG] ✓ Fixing coach {coach.username}: setting role to 'coach' (was: {coach.role})")
+            coach.role = "coach"
+            db.add(coach)
+    
+    if coaches:
+        db.commit()
+    
+    print(f"[DEBUG] Filtered coaches (role='coach' or role=NULL): {len(coaches)} found")
     for coach in coaches:
         print(f"[DEBUG]   - {coach.username} (id={coach.id}, role={coach.role})")
     print("[DEBUG] ===== END =====\n")
