@@ -57,7 +57,9 @@ window.submitCreateCoach = async function(e) {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to create coach');
+            let msg = error.detail || 'Failed to create coach';
+            if (typeof msg === 'object') msg = JSON.stringify(msg);
+            throw new Error(msg);
         }
         
         window.closeCreateCoachModal();
@@ -110,7 +112,9 @@ window.submitEditCoach = async function(e) {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to update coach');
+            let msg = error.detail || 'Failed to update coach';
+            if (typeof msg === 'object') msg = JSON.stringify(msg);
+            throw new Error(msg);
         }
         
         window.closeEditCoachModal();
@@ -145,6 +149,12 @@ window.deleteCoach = async function(id, username) {
     } catch (err) {
         alert('Error: ' + err.message);
     }
+};
+
+window.refreshCoachesList = async function() {
+    console.log('🔄 Refreshing coaches list...');
+    // Navigate to admin to reload the coaches
+    window.location.hash = '#admin';
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -904,9 +914,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 coaches = await response.json();
+                console.log(`✓ Loaded ${coaches.length} coaches from API`, coaches);
+            } else {
+                const errorData = await response.json();
+                console.error(`✗ Failed to load coaches. Status: ${response.status}`, errorData);
             }
         } catch (err) {
-            console.error('Failed to load coaches:', err);
+            console.error('✗ Failed to load coaches:', err);
         }
         
         const coachesHTML = coaches.map(coach => `
@@ -928,9 +942,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h2 class="text-3xl font-bold text-white mb-1">Admin Panel</h2>
                         <p class="text-gray-400">Manage all coaches and their accounts</p>
                     </div>
-                    <button onclick="window.openCreateCoachModal()" class="px-6 py-3 bg-gradient-to-r from-pitch-accent to-emerald-600 text-pitch-dark font-bold rounded-xl hover:shadow-[0_0_20px_rgba(0,255,136,0.4)] transition">
-                        <i class="fa-solid fa-plus mr-2"></i>Create Coach
-                    </button>
+                    <div class="flex gap-3">
+                        <button onclick="window.refreshCoachesList()" class="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition" title="Refresh coaches list">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                        <button onclick="window.openCreateCoachModal()" class="px-6 py-3 bg-gradient-to-r from-pitch-accent to-emerald-600 text-pitch-dark font-bold rounded-xl hover:shadow-[0_0_20px_rgba(0,255,136,0.4)] transition">
+                            <i class="fa-solid fa-plus mr-2"></i>Create Coach
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="glass-panel p-6 rounded-xl border border-gray-700">
@@ -965,7 +984,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-400 mb-2">Password</label>
-                            <input type="password" id="new-coach-password" required class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-pitch-accent">
+                            <div class="relative">
+                                <input type="password" id="new-coach-password" required class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 pr-12 text-white focus:outline-none focus:border-pitch-accent">
+                                <button type="button" onclick="togglePasswordVisibility('new-coach-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
                         <div id="create-coach-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm"></div>
                         <div class="flex gap-3 justify-end pt-4">
@@ -992,7 +1016,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-400 mb-2">New Password (leave blank to keep)</label>
-                            <input type="password" id="edit-coach-password" class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 text-white focus:outline-none focus:border-pitch-accent">
+                            <div class="relative">
+                                <input type="password" id="edit-coach-password" class="w-full bg-pitch-dark border border-gray-700 rounded-lg py-2 px-4 pr-12 text-white focus:outline-none focus:border-pitch-accent">
+                                <button type="button" onclick="togglePasswordVisibility('edit-coach-password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
                         <div id="edit-coach-error" class="hidden bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm"></div>
                         <div class="flex gap-3 justify-end pt-4">
@@ -1485,18 +1514,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize profile display on page load
     function updateProfileDisplay() {
         if (STATE.user?.username) {
-            const roleLabel = STATE.user.role === 'admin' ? 'Admin' : 'Coach';
-            document.getElementById('profile-name').textContent = `${roleLabel} ${STATE.user.username}`;
-            document.getElementById('profile-avatar').src = `https://ui-avatars.com/api/?name=${STATE.user.username}&background=${STATE.user.role === 'admin' ? 'ff3366' : '00ff88'}&color=0a0f1c`;
+            const isAdmin = STATE.user.role === 'admin';
             
-            // Show admin nav link if user is admin
+            // Set profile display name - just username for admin, "Coach [username]" for coaches
+            if (isAdmin) {
+                document.getElementById('profile-name').textContent = STATE.user.username;
+            } else {
+                document.getElementById('profile-name').textContent = `Coach ${STATE.user.username}`;
+            }
+            
+            document.getElementById('profile-avatar').src = `https://ui-avatars.com/api/?name=${STATE.user.username}&background=${isAdmin ? 'ff3366' : '00ff88'}&color=0a0f1c`;
+            
+            // Show/hide nav links based on role
             const adminLink = document.getElementById('admin-nav-link');
-            if (STATE.user.role === 'admin') {
+            const teamsLink = document.getElementById('teams-nav-link');
+            const playersLink = document.getElementById('players-nav-link');
+            const statsLink = document.getElementById('stats-nav-link');
+            
+            if (isAdmin) {
+                // Admin: show admin link, hide teams/players/stats
                 adminLink.classList.remove('hidden');
                 adminLink.classList.add('flex');
+                teamsLink.classList.add('hidden');
+                playersLink.classList.add('hidden');
+                statsLink.classList.add('hidden');
             } else {
+                // Coach: hide admin link, show teams/players/stats
                 adminLink.classList.add('hidden');
                 adminLink.classList.remove('flex');
+                teamsLink.classList.remove('hidden');
+                playersLink.classList.remove('hidden');
+                statsLink.classList.remove('hidden');
             }
         }
     }
