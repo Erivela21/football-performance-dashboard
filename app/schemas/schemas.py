@@ -236,6 +236,8 @@ class MatchScheduleResponse(MatchScheduleBase):
 # Admin schemas
 class AdminUserUpdate(BaseModel):
     """Schema for admin to update user details."""
+    username: Optional[str] = Field(None, min_length=3, max_length=150)
+    email: Optional[str] = Field(None, max_length=254)
     password: Optional[str] = Field(None, min_length=4)
     role: Optional[str] = Field(None, pattern="^(admin|coach)$")
     is_active: Optional[bool] = None
