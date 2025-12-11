@@ -356,3 +356,87 @@ def get_insights(
     }
     
     return insights
+
+
+@router.get("/ml-injury-prediction")
+def get_ml_injury_predictions(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get ML-based injury risk predictions for synthetic players.
+    
+    This endpoint demonstrates a machine learning approach to injury prediction
+    using synthetic data and a weighted risk scoring model.
+    """
+    print(f"[DEBUG] get_ml_injury_predictions called by user {current_user.username}")
+    if current_user.role == 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins cannot access analytics"
+        )
+    
+    from app.utils.ml_model import predict_all_players, get_team_risk_summary, DEMO_PLAYERS
+    
+    # Get predictions for all synthetic players
+    predictions = predict_all_players(DEMO_PLAYERS)
+    
+    # Get team summary
+    summary = get_team_risk_summary(predictions)
+    
+    return {
+        "model_info": {
+            "name": "Injury Risk Prediction Model v1.0",
+            "type": "Weighted Risk Scoring (Simulated ML)",
+            "factors_considered": [
+                "Training Load", "High Intensity Ratio", "Rest Days",
+                "Age", "Injury History", "Fatigue", "Sprint Count"
+            ],
+            "last_updated": datetime.utcnow().isoformat()
+        },
+        "team_summary": summary,
+        "player_predictions": predictions
+    }
+
+
+@router.get("/ml-player-prediction/{player_id}")
+def get_single_player_prediction(
+    player_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed ML injury prediction for a specific synthetic player.
+    """
+    print(f"[DEBUG] get_single_player_prediction called for player {player_id}")
+    if current_user.role == 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins cannot access analytics"
+        )
+    
+    from app.utils.ml_model import calculate_injury_risk, DEMO_PLAYERS
+    
+    # Find the player in demo data
+    player = next((p for p in DEMO_PLAYERS if p["id"] == player_id), None)
+    
+    if not player:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Synthetic player with ID {player_id} not found"
+        )
+    
+    prediction = calculate_injury_risk(
+        player_metrics=player.get("metrics", {}),
+        age=player.get("age", 25)
+    )
+    
+    return {
+        "player_id": player["id"],
+        "player_name": player["name"],
+        "position": player["position"],
+        "age": player["age"],
+        "raw_metrics": player["metrics"],
+        **prediction
+    }
+

@@ -585,6 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'stats': await renderAnalytics(); break;
                 case 'training-load': await renderTrainingLoad(); break;
                 case 'injury-risk': await renderInjuryRisk(); break;
+                case 'ml-predictions': await renderMLPredictions(); break;
                 case 'schedule': await renderSchedule(); break;
                 case 'admin': await renderAdmin(); break;
                 default: STATE.user.role === 'admin' ? await renderAdmin() : await renderHome();
@@ -938,6 +939,154 @@ document.addEventListener('DOMContentLoaded', () => {
                 `).join('')}
             </div>
         `;
+    }
+
+    async function renderMLPredictions() {
+        const data = await apiCall('/analytics/ml-injury-prediction');
+        
+        els.pageContent.innerHTML = `
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-1">🤖 ML Injury Predictions</h2>
+                    <p class="text-gray-400">Machine Learning model analyzing synthetic player data</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1 rounded-full text-xs ${data.team_summary.team_health_status === 'ALERT' ? 'bg-red-500/20 text-red-400' : data.team_summary.team_health_status === 'CAUTION' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'}">
+                        Team Status: ${data.team_summary.team_health_status}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Model Info -->
+            <div class="glass-panel p-4 rounded-xl mb-6 border border-pitch-accent/30">
+                <div class="flex items-center gap-3 mb-2">
+                    <i class="fa-solid fa-brain text-pitch-accent text-xl"></i>
+                    <h3 class="font-bold text-white">${data.model_info.name}</h3>
+                </div>
+                <p class="text-sm text-gray-400 mb-2">Type: ${data.model_info.type}</p>
+                <div class="flex flex-wrap gap-2">
+                    ${data.model_info.factors_considered.map(f => `<span class="px-2 py-1 bg-pitch-accent/10 rounded text-xs text-pitch-accent">${f}</span>`).join('')}
+                </div>
+            </div>
+
+            <!-- Team Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="glass-panel p-4 rounded-xl text-center">
+                    <p class="text-3xl font-bold text-white">${data.team_summary.total_players}</p>
+                    <p class="text-sm text-gray-400">Total Players</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center">
+                    <p class="text-3xl font-bold text-pitch-accent">${data.team_summary.average_risk_score}%</p>
+                    <p class="text-sm text-gray-400">Avg Risk Score</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center border border-red-500/30">
+                    <p class="text-3xl font-bold text-red-400">${data.team_summary.players_at_critical_risk}</p>
+                    <p class="text-sm text-gray-400">Critical Risk</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center border border-yellow-500/30">
+                    <p class="text-3xl font-bold text-yellow-400">${data.team_summary.players_at_high_risk}</p>
+                    <p class="text-sm text-gray-400">High Risk</p>
+                </div>
+            </div>
+
+            <!-- Risk Distribution Chart -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="glass-panel p-6 rounded-xl">
+                    <h3 class="text-lg font-bold text-white mb-4">Risk Distribution</h3>
+                    <canvas id="mlRiskChart"></canvas>
+                </div>
+                <div class="glass-panel p-6 rounded-xl">
+                    <h3 class="text-lg font-bold text-white mb-4">Top Risk Factors</h3>
+                    <div class="space-y-3">
+                        ${data.team_summary.top_risk_factors.map(f => `
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-300">${f.factor}</span>
+                                <span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-sm">${f.affected_players} players</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Predictions Table -->
+            <div class="glass-panel p-6 rounded-xl">
+                <h3 class="text-lg font-bold text-white mb-4">Individual Player Predictions</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-white/5 text-gray-400 text-xs uppercase">
+                            <tr>
+                                <th class="px-4 py-3">Player</th>
+                                <th class="px-4 py-3">Position</th>
+                                <th class="px-4 py-3">Age</th>
+                                <th class="px-4 py-3">Risk Score</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3">Risk Factors</th>
+                                <th class="px-4 py-3">Recommendation</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-800 text-sm">
+                            ${data.player_predictions.map(p => `
+                                <tr class="hover:bg-white/5 transition-colors ${p.risk_level === 'critical' ? 'bg-red-500/5' : ''}">
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-2">
+                                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p.player_name)}&background=random" class="w-8 h-8 rounded-full">
+                                            <span class="font-medium text-white">${p.player_name}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-400">${p.position}</td>
+                                    <td class="px-4 py-3 text-gray-400">${p.age}</td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                <div class="h-full ${p.risk_score >= 70 ? 'bg-red-500' : p.risk_score >= 50 ? 'bg-yellow-500' : p.risk_score >= 30 ? 'bg-blue-500' : 'bg-green-500'}" style="width: ${p.risk_score}%"></div>
+                                            </div>
+                                            <span class="text-white font-medium">${p.risk_score}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-1 rounded-full text-xs font-bold ${
+                                            p.risk_level === 'critical' ? 'bg-red-500/20 text-red-400' :
+                                            p.risk_level === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                                            p.risk_level === 'moderate' ? 'bg-yellow-500/20 text-yellow-400' :
+                                            'bg-green-500/20 text-green-400'
+                                        }">${p.risk_level.toUpperCase()}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex flex-wrap gap-1 max-w-xs">
+                                            ${p.risk_factors.slice(0, 2).map(f => `
+                                                <span class="px-1.5 py-0.5 bg-white/5 rounded text-xs text-gray-400" title="${f.description}">${f.factor}</span>
+                                            `).join('')}
+                                            ${p.risk_factors.length > 2 ? `<span class="text-xs text-gray-500">+${p.risk_factors.length - 2} more</span>` : ''}
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3 text-xs text-gray-300 max-w-[200px]">${p.recommendation}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        // Render Risk Distribution Chart
+        const dist = data.team_summary.risk_distribution;
+        new Chart(document.getElementById('mlRiskChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Critical', 'High', 'Moderate', 'Low'],
+                datasets: [{
+                    data: [dist.critical, dist.high, dist.moderate, dist.low],
+                    backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#9ca3af' } }
+                }
+            }
+        });
     }
 
     async function renderSchedule() {
