@@ -64,7 +64,7 @@ def seed_demo_coach(db: Session) -> User:
         db.add(demo_coach)
         db.commit()
         db.refresh(demo_coach)
-        print(f"[SEED] ✓ Created demo coach: coach@pitchperfect.com / Coach1234")
+        print("[SEED] ✓ Created demo coach: coach@pitchperfect.com / Coach1234")
     else:
         print(f"[SEED] Demo coach already exists (id={demo_coach.id})")
     
@@ -208,9 +208,6 @@ def seed_match_schedule(db: Session, team: Team) -> None:
         "Manchester United", "Liverpool FC", "Arsenal", "Chelsea",
         "Manchester City", "Tottenham", "Newcastle United"
     ]
-    locations = [
-        "Home Stadium", "Away Ground", "National Stadium", "Training Complex"
-    ]
     
     events = [
         {
@@ -299,7 +296,7 @@ def seed_all_demo_data(db: Session) -> dict:
         
         print("="*50)
         print("[SEED] ✓ Database seeding completed successfully!")
-        print(f"[SEED] Demo login: coach@pitchperfect.com / Coach1234")
+        print("[SEED] Demo login: coach@pitchperfect.com / Coach1234")
         print("="*50 + "\n")
         
         return {
