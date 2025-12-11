@@ -9,7 +9,6 @@ This module provides:
 
 import random
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
 
 # Simple model weights (simulating a trained logistic regression)
 # In a real scenario, you'd train this on actual historical data
