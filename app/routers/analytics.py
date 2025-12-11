@@ -364,10 +364,10 @@ def get_ml_injury_predictions(
     db: Session = Depends(get_db)
 ):
     """
-    Get ML-based injury risk predictions for synthetic players.
+    Get ML-based injury risk predictions for players from the database.
     
-    This endpoint demonstrates a machine learning approach to injury prediction
-    using synthetic data and a weighted risk scoring model.
+    This endpoint uses actual player data from the database and applies
+    a machine learning-style weighted risk scoring model.
     """
     print(f"[DEBUG] get_ml_injury_predictions called by user {current_user.username}")
     if current_user.role == 'admin':
@@ -376,10 +376,103 @@ def get_ml_injury_predictions(
             detail="Admins cannot access analytics"
         )
     
-    from app.utils.ml_model import predict_all_players, get_team_risk_summary, DEMO_PLAYERS
+    from app.utils.ml_model import calculate_injury_risk, get_team_risk_summary
     
-    # Get predictions for all synthetic players
-    predictions = predict_all_players(DEMO_PLAYERS)
+    # Get players from database (current user's teams)
+    cutoff_date = datetime.utcnow() - timedelta(days=14)
+    
+    # Query real players with their training data
+    db_players = db.query(Player).join(Team).filter(Team.user_id == current_user.id).all()
+    
+    if not db_players:
+        # Fallback to synthetic data if no real players
+        from app.utils.ml_model import predict_all_players, DEMO_PLAYERS
+        predictions = predict_all_players(DEMO_PLAYERS)
+        summary = get_team_risk_summary(predictions)
+        return {
+            "model_info": {
+                "name": "Injury Risk Prediction Model v1.0",
+                "type": "Weighted Risk Scoring (Demo Data)",
+                "factors_considered": [
+                    "Training Load", "High Intensity Ratio", "Rest Days",
+                    "Age", "Injury History", "Fatigue", "Sprint Count"
+                ],
+                "last_updated": datetime.utcnow().isoformat(),
+                "data_source": "synthetic"
+            },
+            "team_summary": summary,
+            "player_predictions": predictions
+        }
+    
+    # Build player data from database
+    predictions = []
+    for player in db_players:
+        # Get training stats for this player (last 14 days)
+        sessions = db.query(
+            func.count(TrainingSession.id).label('session_count'),
+            func.sum(TrainingSession.duration_minutes).label('total_minutes')
+        ).filter(
+            TrainingSession.player_id == player.id,
+            TrainingSession.session_date >= cutoff_date
+        ).first()
+        
+        stats = db.query(
+            func.avg(SessionStats.distance_km).label('avg_distance'),
+            func.avg(SessionStats.avg_heart_rate).label('avg_hr'),
+            func.max(SessionStats.max_heart_rate).label('max_hr'),
+            func.sum(SessionStats.sprints_count).label('total_sprints')
+        ).join(TrainingSession).filter(
+            TrainingSession.player_id == player.id,
+            TrainingSession.session_date >= cutoff_date
+        ).first()
+        
+        # Calculate age from birth_date
+        age = 25  # default
+        if player.birth_date:
+            try:
+                birth = datetime.strptime(player.birth_date, "%Y-%m-%d")
+                today = datetime.utcnow()
+                age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+            except (ValueError, TypeError):
+                pass
+        
+        # Build metrics dict for ML model
+        weekly_minutes = (sessions.total_minutes or 0) if sessions else 0
+        session_count = (sessions.session_count or 0) if sessions else 0
+        total_sprints = int(stats.total_sprints or 0) if stats else 0
+        avg_hr = int(stats.avg_hr or 0) if stats else 0
+        
+        # Estimate rest days based on sessions (14 days - session days)
+        rest_days = max(0, 14 - session_count) // 2  # Rough estimate
+        
+        metrics = {
+            "weekly_training_minutes": weekly_minutes,
+            "sessions_this_week": session_count,
+            "high_intensity_percentage": 35 if avg_hr > 160 else 25,  # Estimate
+            "rest_days_last_week": rest_days,
+            "avg_heart_rate": avg_hr,
+            "max_heart_rate_recorded": int(stats.max_hr or 0) if stats else 0,
+            "total_distance_km": float(stats.avg_distance or 0) * session_count if stats else 0,
+            "sprint_count_weekly": total_sprints,
+            "previous_injuries_count": 0,  # Not tracked yet
+            "days_since_last_injury": 365,  # Assume healthy
+            "fatigue_score": 5 if weekly_minutes < 400 else 7 if weekly_minutes < 600 else 8,
+            "sleep_quality_avg": 7.5
+        }
+        
+        # Get prediction from ML model
+        prediction = calculate_injury_risk(metrics, age)
+        
+        predictions.append({
+            "player_id": player.id,
+            "player_name": f"{player.name} {player.surname or ''}".strip(),
+            "position": player.position,
+            "age": age,
+            **prediction
+        })
+    
+    # Sort by risk score (highest first)
+    predictions.sort(key=lambda x: x["risk_score"], reverse=True)
     
     # Get team summary
     summary = get_team_risk_summary(predictions)
@@ -387,12 +480,13 @@ def get_ml_injury_predictions(
     return {
         "model_info": {
             "name": "Injury Risk Prediction Model v1.0",
-            "type": "Weighted Risk Scoring (Simulated ML)",
+            "type": "Weighted Risk Scoring (Real Data)",
             "factors_considered": [
                 "Training Load", "High Intensity Ratio", "Rest Days",
                 "Age", "Injury History", "Fatigue", "Sprint Count"
             ],
-            "last_updated": datetime.utcnow().isoformat()
+            "last_updated": datetime.utcnow().isoformat(),
+            "data_source": "database"
         },
         "team_summary": summary,
         "player_predictions": predictions
@@ -406,7 +500,7 @@ def get_single_player_prediction(
     db: Session = Depends(get_db)
 ):
     """
-    Get detailed ML injury prediction for a specific synthetic player.
+    Get detailed ML injury prediction for a specific player from the database.
     """
     print(f"[DEBUG] get_single_player_prediction called for player {player_id}")
     if current_user.role == 'admin':
@@ -415,28 +509,77 @@ def get_single_player_prediction(
             detail="Admins cannot access analytics"
         )
     
-    from app.utils.ml_model import calculate_injury_risk, DEMO_PLAYERS
+    from app.utils.ml_model import calculate_injury_risk
     
-    # Find the player in demo data
-    player = next((p for p in DEMO_PLAYERS if p["id"] == player_id), None)
+    # Get player from database
+    player = db.query(Player).join(Team).filter(
+        Player.id == player_id,
+        Team.user_id == current_user.id
+    ).first()
     
     if not player:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Synthetic player with ID {player_id} not found"
+            detail=f"Player with ID {player_id} not found"
         )
     
-    prediction = calculate_injury_risk(
-        player_metrics=player.get("metrics", {}),
-        age=player.get("age", 25)
-    )
+    # Get training data
+    cutoff_date = datetime.utcnow() - timedelta(days=14)
+    
+    sessions = db.query(
+        func.count(TrainingSession.id).label('session_count'),
+        func.sum(TrainingSession.duration_minutes).label('total_minutes')
+    ).filter(
+        TrainingSession.player_id == player.id,
+        TrainingSession.session_date >= cutoff_date
+    ).first()
+    
+    stats = db.query(
+        func.avg(SessionStats.distance_km).label('avg_distance'),
+        func.avg(SessionStats.avg_heart_rate).label('avg_hr'),
+        func.max(SessionStats.max_heart_rate).label('max_hr'),
+        func.sum(SessionStats.sprints_count).label('total_sprints')
+    ).join(TrainingSession).filter(
+        TrainingSession.player_id == player.id,
+        TrainingSession.session_date >= cutoff_date
+    ).first()
+    
+    # Calculate age
+    age = 25
+    if player.birth_date:
+        try:
+            birth = datetime.strptime(player.birth_date, "%Y-%m-%d")
+            today = datetime.utcnow()
+            age = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+        except (ValueError, TypeError):
+            pass
+    
+    # Build metrics
+    weekly_minutes = (sessions.total_minutes or 0) if sessions else 0
+    session_count = (sessions.session_count or 0) if sessions else 0
+    
+    metrics = {
+        "weekly_training_minutes": weekly_minutes,
+        "sessions_this_week": session_count,
+        "high_intensity_percentage": 35 if (stats and stats.avg_hr and stats.avg_hr > 160) else 25,
+        "rest_days_last_week": max(0, 14 - session_count) // 2,
+        "avg_heart_rate": int(stats.avg_hr or 0) if stats else 0,
+        "max_heart_rate_recorded": int(stats.max_hr or 0) if stats else 0,
+        "total_distance_km": float(stats.avg_distance or 0) * session_count if stats else 0,
+        "sprint_count_weekly": int(stats.total_sprints or 0) if stats else 0,
+        "previous_injuries_count": 0,
+        "days_since_last_injury": 365,
+        "fatigue_score": 5 if weekly_minutes < 400 else 7 if weekly_minutes < 600 else 8,
+        "sleep_quality_avg": 7.5
+    }
+    
+    prediction = calculate_injury_risk(metrics, age)
     
     return {
-        "player_id": player["id"],
-        "player_name": player["name"],
-        "position": player["position"],
-        "age": player["age"],
-        "raw_metrics": player["metrics"],
+        "player_id": player.id,
+        "player_name": f"{player.name} {player.surname or ''}".strip(),
+        "position": player.position,
+        "age": age,
+        "raw_metrics": metrics,
         **prediction
     }
-

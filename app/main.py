@@ -261,6 +261,15 @@ async def lifespan(app: FastAPI):
             db.close()
         except Exception as e:
             logger.warning(f"Failed to create/update demo user: {e}")
+        
+        # Seed demo data (players, teams, training sessions)
+        try:
+            from app.utils.seed_data import seed_all_demo_data
+            db = next(get_db())
+            seed_all_demo_data(db)
+            db.close()
+        except Exception as e:
+            logger.warning(f"Failed to seed demo data: {e}")
             
     except Exception as e:
         logger.error(f"Failed to create database tables: {e}")
