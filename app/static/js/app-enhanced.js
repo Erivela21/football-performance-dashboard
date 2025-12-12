@@ -264,6 +264,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Analytics Toggle - Expand/Collapse submenu
+        const analyticsNavLink = document.getElementById('analytics-nav-link');
+        const analyticsSubmenu = document.getElementById('analytics-submenu');
+        const analyticsChevron = document.getElementById('analytics-chevron');
+        
+        if (analyticsNavLink && analyticsSubmenu && analyticsChevron) {
+            analyticsNavLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                analyticsSubmenu.classList.toggle('open');
+                analyticsChevron.classList.toggle('rotate');
+            });
+        }
+
         // Mobile Menu (Basic toggle)
         const menuBtn = document.querySelector('.fa-bars').parentElement;
         menuBtn.addEventListener('click', () => {
@@ -561,6 +575,12 @@ document.addEventListener('DOMContentLoaded', () => {
             page = 'home';
         }
         
+        // Show page loader
+        const pageLoader = document.getElementById('page-loader');
+        if (pageLoader) {
+            pageLoader.classList.add('active');
+        }
+        
         // Update Sidebar Active State
         els.navItems.forEach(item => {
             const href = item.getAttribute('href').substring(1);
@@ -581,8 +601,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Small delay to let the loader animation start
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         // Render Content
-        els.pageContent.innerHTML = '<div class="flex justify-center p-10"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-pitch-accent"></i></div>';
+        els.pageContent.innerHTML = '';
         
         try {
             console.log(`[DEBUG] Navigating to: ${page} (user role: ${STATE.user.role})`);
@@ -601,6 +624,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error(`[DEBUG] Error navigating to ${page}:`, e);
             els.pageContent.innerHTML = `<div class="text-red-500 p-4">Error loading page: ${e.message}</div>`;
+        } finally {
+            // Hide page loader
+            if (pageLoader) {
+                // Small delay to ensure smooth transition
+                setTimeout(() => {
+                    pageLoader.classList.remove('active');
+                }, 300);
+            }
         }
     }
 
@@ -780,6 +811,100 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="flex items-center text-xs text-gray-400">
                         <span>vs. ${nextMatchOpponent}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scoreboard Widget & Recommendations Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                <!-- Scoreboard Widget -->
+                ${nextMatch ? `
+                <div class="scoreboard-card">
+                    <h3 class="text-lg font-bold text-white mb-4">
+                        <i class="fa-solid fa-futbol text-pitch-accent mr-2"></i>Next Match
+                    </h3>
+                    <div class="scoreboard-teams">
+                        <div class="scoreboard-team">
+                            <div class="scoreboard-team-badge">
+                                ${STATE.currentTeam ? STATE.currentTeam.name.charAt(0).toUpperCase() : 'T'}
+                            </div>
+                            <span class="scoreboard-team-name">${STATE.currentTeam ? STATE.currentTeam.name : 'Your Team'}</span>
+                        </div>
+                        <div class="scoreboard-vs">
+                            <span class="scoreboard-vs-text">VS</span>
+                            <span class="scoreboard-date">${new Date(nextMatch.event_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                        </div>
+                        <div class="scoreboard-team">
+                            <div class="scoreboard-team-badge opponent">
+                                ${nextMatch.opponent ? nextMatch.opponent.charAt(0).toUpperCase() : 'O'}
+                            </div>
+                            <span class="scoreboard-team-name">${nextMatch.opponent || 'Opponent'}</span>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <p class="text-sm text-gray-400">${nextMatch.event_type ? nextMatch.event_type.charAt(0).toUpperCase() + nextMatch.event_type.slice(1) : 'Match'} • ${nextMatch.location || 'TBD'}</p>
+                    </div>
+                </div>
+                ` : `
+                <div class="scoreboard-card">
+                    <h3 class="text-lg font-bold text-white mb-4">
+                        <i class="fa-solid fa-futbol text-pitch-accent mr-2"></i>Next Match
+                    </h3>
+                    <div class="text-center py-8">
+                        <i class="fa-solid fa-calendar-xmark text-4xl text-gray-600 mb-3"></i>
+                        <p class="text-gray-400">No upcoming matches scheduled</p>
+                        <button onclick="window.navigateTo('schedule')" class="mt-4 text-pitch-accent hover:underline text-sm">
+                            <i class="fa-solid fa-plus mr-1"></i>Add Match
+                        </button>
+                    </div>
+                </div>
+                `}
+
+                <!-- AI Recommendations -->
+                <div class="glass-panel rounded-2xl p-6 border border-purple-500/20">
+                    <h3 class="text-lg font-bold text-white mb-4">
+                        <i class="fa-solid fa-lightbulb text-yellow-400 mr-2"></i>AI Recommendations
+                    </h3>
+                    <div class="space-y-3">
+                        ${insights && insights.recovery_recommendations && insights.recovery_recommendations.length > 0 ? 
+                            insights.recovery_recommendations.slice(0, 3).map(rec => `
+                                <div class="flex items-start gap-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                                    <i class="fa-solid fa-bed text-blue-400 mt-0.5"></i>
+                                    <div>
+                                        <p class="text-sm text-white font-medium">${rec.player_name}</p>
+                                        <p class="text-xs text-gray-400">${rec.recommendation}</p>
+                                    </div>
+                                </div>
+                            `).join('') : ''}
+                        ${insights && insights.injury_prevention && insights.injury_prevention.length > 0 ? 
+                            insights.injury_prevention.slice(0, 2).map(alert => `
+                                <div class="flex items-start gap-3 p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                                    <i class="fa-solid fa-triangle-exclamation text-red-400 mt-0.5"></i>
+                                    <div>
+                                        <p class="text-sm text-white font-medium">${alert.player_name}</p>
+                                        <p class="text-xs text-gray-400">${alert.alert}</p>
+                                    </div>
+                                </div>
+                            `).join('') : ''}
+                        ${insights && insights.workload_optimization && insights.workload_optimization.length > 0 ? 
+                            insights.workload_optimization.slice(0, 2).map(opt => `
+                                <div class="flex items-start gap-3 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                                    <i class="fa-solid fa-chart-line text-green-400 mt-0.5"></i>
+                                    <div>
+                                        <p class="text-sm text-white font-medium">${opt.player_name}</p>
+                                        <p class="text-xs text-gray-400">${opt.suggestion}</p>
+                                    </div>
+                                </div>
+                            `).join('') : ''}
+                        ${(!insights || ((!insights.recovery_recommendations || insights.recovery_recommendations.length === 0) && 
+                           (!insights.injury_prevention || insights.injury_prevention.length === 0) &&
+                           (!insights.workload_optimization || insights.workload_optimization.length === 0))) ? `
+                            <div class="text-center py-4">
+                                <i class="fa-solid fa-check-circle text-3xl text-green-400 mb-2"></i>
+                                <p class="text-gray-400 text-sm">All players are in good condition!</p>
+                                <p class="text-xs text-gray-500 mt-1">Add training sessions to see personalized recommendations.</p>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             </div>
@@ -1083,13 +1208,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <!-- Load Distribution Bar Chart -->
                 <div class="glass-panel p-6 rounded-2xl">
                     <h3 class="text-lg font-bold text-white mb-4">Player Load Scores</h3>
-                    <canvas id="loadBarChart" height="250"></canvas>
+                    <div class="chart-container">
+                        <canvas id="loadBarChart"></canvas>
+                    </div>
                 </div>
                 
                 <!-- Load Distribution Pie Chart -->
                 <div class="glass-panel p-6 rounded-2xl">
                     <h3 class="text-lg font-bold text-white mb-4">Load Distribution</h3>
-                    <canvas id="loadPieChart" height="250"></canvas>
+                    <div class="chart-container">
+                        <canvas id="loadPieChart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -1263,13 +1392,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <!-- Risk Scores Bar Chart -->
                 <div class="glass-panel p-6 rounded-2xl">
                     <h3 class="text-lg font-bold text-white mb-4">Player Risk Scores</h3>
-                    <canvas id="riskBarChart" height="250"></canvas>
+                    <div class="chart-container">
+                        <canvas id="riskBarChart"></canvas>
+                    </div>
                 </div>
                 
                 <!-- Risk Distribution Pie Chart -->
                 <div class="glass-panel p-6 rounded-2xl">
                     <h3 class="text-lg font-bold text-white mb-4">Risk Distribution</h3>
-                    <canvas id="riskPieChart" height="250"></canvas>
+                    <div class="chart-container">
+                        <canvas id="riskPieChart"></canvas>
+                    </div>
                 </div>
             </div>
 
