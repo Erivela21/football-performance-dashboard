@@ -1193,12 +1193,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h2 class="text-3xl font-bold text-white mb-1">Schedule</h2>
                     <p class="text-gray-400">Upcoming matches and training sessions</p>
                 </div>
+                <div class="flex gap-3">
+                    <button onclick="window.exportToGoogleCalendar()" class="bg-pitch-light border border-blue-500/30 text-blue-400 px-4 py-2 rounded-lg hover:bg-blue-500/20 transition-colors font-medium">
+                        <i class="fa-brands fa-google mr-2"></i> Export to Google
+                    </button>
+                    <button onclick="window.openAddEventModal()" class="bg-pitch-accent text-pitch-dark px-6 py-3 rounded-lg hover:bg-pitch-accent/90 transition-colors font-medium">
+                        <i class="fa-solid fa-plus mr-2"></i> Add Event
+                    </button>
+                </div>
             </div>
 
             <div class="space-y-4">
-                ${events.length === 0 ? '<p class="text-gray-500">No upcoming events scheduled.</p>' : ''}
+                ${events.length === 0 ? `
+                    <div class="glass-panel p-8 rounded-2xl text-center border border-dashed border-pitch-accent/30">
+                        <i class="fa-solid fa-calendar-plus text-4xl text-gray-500 mb-4"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">No Events Scheduled</h3>
+                        <p class="text-gray-400 mb-4">Add your first match or training session to get started.</p>
+                        <button onclick="window.openAddEventModal()" class="bg-pitch-accent text-pitch-dark px-6 py-3 rounded-lg hover:bg-pitch-accent/90 transition-colors font-medium">
+                            <i class="fa-solid fa-plus mr-2"></i> Add Event
+                        </button>
+                    </div>
+                ` : ''}
                 ${events.map(event => `
-                    <div class="glass-panel p-6 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${event.is_important ? 'border border-pitch-accent/50' : ''}">
+                    <div class="glass-panel p-6 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 ${event.is_important ? 'border border-pitch-accent/50' : ''} group">
                         <div class="flex items-center gap-6">
                             <div class="text-center min-w-[60px]">
                                 <p class="text-sm text-gray-400 uppercase">${new Date(event.event_date).toLocaleString('default', { month: 'short' })}</p>
@@ -1209,17 +1226,163 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <h3 class="text-xl font-bold text-white">${event.title}</h3>
                                     ${event.is_important ? '<span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">IMPORTANT</span>' : ''}
                                 </div>
-                                <p class="text-gray-400">${event.event_type === 'match' ? `vs ${event.opponent}` : event.notes || 'Training Session'}</p>
+                                <p class="text-gray-400">${event.event_type === 'match' || event.event_type === 'important_match' ? `vs ${event.opponent || 'TBD'}` : event.notes || 'Training Session'}</p>
                                 <p class="text-sm text-gray-500 mt-1"><i class="fa-solid fa-location-dot mr-1"></i> ${event.location || 'Training Ground'}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
                             <span class="text-2xl font-mono text-pitch-accent">${new Date(event.event_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <button onclick="window.deleteEvent(${event.id})" class="opacity-0 group-hover:opacity-100 transition-opacity text-red-400 hover:text-red-300 p-2">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            <button onclick="window.addEventToGoogleCalendar(${JSON.stringify(event).replace(/"/g, '&quot;')})" class="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400 hover:text-blue-300 p-2" title="Add to Google Calendar">
+                                <i class="fa-brands fa-google"></i>
+                            </button>
                         </div>
                     </div>
                 `).join('')}
             </div>
+
+            <!-- Add Event Modal -->
+            <div id="add-event-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
+                <div class="glass-panel rounded-2xl p-8 max-w-lg w-full mx-4">
+                    <h2 class="text-2xl font-bold text-white mb-6">Add New Event</h2>
+                    <form id="add-event-form" class="space-y-4">
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2">Event Type</label>
+                            <select id="event-type" class="w-full bg-pitch-light border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-pitch-accent focus:outline-none" required>
+                                <option value="match">Match</option>
+                                <option value="training">Training Session</option>
+                                <option value="important_match">Important Match</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2">Title</label>
+                            <input type="text" id="event-title" class="w-full bg-pitch-light border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-pitch-accent focus:outline-none" placeholder="League Match vs..." required>
+                        </div>
+                        <div id="opponent-field">
+                            <label class="block text-gray-400 text-sm mb-2">Opponent</label>
+                            <input type="text" id="event-opponent" class="w-full bg-pitch-light border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-pitch-accent focus:outline-none" placeholder="Manchester United">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-400 text-sm mb-2">Date</label>
+                                <input type="date" id="event-date" class="w-full bg-pitch-light border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-pitch-accent focus:outline-none" required>
+                            </div>
+                            <div>
+                                <label class="block text-gray-400 text-sm mb-2">Time</label>
+                                <input type="time" id="event-time" class="w-full bg-pitch-light border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-pitch-accent focus:outline-none" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2">Location</label>
+                            <input type="text" id="event-location" class="w-full bg-pitch-light border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-pitch-accent focus:outline-none" placeholder="Home Stadium">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-sm mb-2">Notes (optional)</label>
+                            <textarea id="event-notes" rows="2" class="w-full bg-pitch-light border border-gray-700 rounded-lg px-4 py-3 text-white focus:border-pitch-accent focus:outline-none resize-none" placeholder="Additional details..."></textarea>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="event-important" class="w-4 h-4 accent-pitch-accent">
+                            <label for="event-important" class="text-gray-400 text-sm">Mark as important</label>
+                        </div>
+                        <div class="flex gap-4 mt-6">
+                            <button type="button" onclick="window.closeAddEventModal()" class="flex-1 bg-pitch-light text-gray-400 py-3 rounded-lg hover:text-white transition-colors">Cancel</button>
+                            <button type="submit" class="flex-1 bg-pitch-accent text-pitch-dark py-3 rounded-lg font-medium hover:bg-pitch-accent/90 transition-colors">Add Event</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         `;
+
+        // Event handlers
+        window.openAddEventModal = () => {
+            document.getElementById('add-event-modal').classList.remove('hidden');
+            document.getElementById('add-event-modal').classList.add('flex');
+            // Set default date to tomorrow
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('event-date').value = tomorrow.toISOString().split('T')[0];
+            document.getElementById('event-time').value = '18:00';
+        };
+
+        window.closeAddEventModal = () => {
+            document.getElementById('add-event-modal').classList.add('hidden');
+            document.getElementById('add-event-modal').classList.remove('flex');
+        };
+
+        // Toggle opponent field based on event type
+        document.getElementById('event-type').addEventListener('change', (e) => {
+            const opponentField = document.getElementById('opponent-field');
+            if (e.target.value === 'training') {
+                opponentField.style.display = 'none';
+            } else {
+                opponentField.style.display = 'block';
+            }
+        });
+
+        // Form submission
+        document.getElementById('add-event-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const eventDate = document.getElementById('event-date').value;
+            const eventTime = document.getElementById('event-time').value;
+            const eventData = {
+                team_id: STATE.currentTeam ? STATE.currentTeam.id : null,
+                event_type: document.getElementById('event-type').value,
+                title: document.getElementById('event-title').value,
+                opponent: document.getElementById('event-opponent').value || null,
+                event_date: new Date(`${eventDate}T${eventTime}`).toISOString(),
+                location: document.getElementById('event-location').value || null,
+                notes: document.getElementById('event-notes').value || null,
+                is_important: document.getElementById('event-important').checked
+            };
+            try {
+                await apiCall('/schedule', 'POST', eventData);
+                window.closeAddEventModal();
+                await renderSchedule();
+            } catch (err) {
+                alert('Error creating event: ' + err.message);
+            }
+        });
+
+        window.deleteEvent = async (eventId) => {
+            if (!confirm('Are you sure you want to delete this event?')) return;
+            try {
+                await apiCall(`/schedule/${eventId}`, 'DELETE');
+                await renderSchedule();
+            } catch (err) {
+                alert('Error deleting event: ' + err.message);
+            }
+        };
+
+        // Google Calendar integration
+        window.addEventToGoogleCalendar = (event) => {
+            const startDate = new Date(event.event_date);
+            const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
+            
+            const formatDate = (date) => date.toISOString().replace(/-|:|\\.\\d{3}/g, '').slice(0, -1) + 'Z';
+            
+            const params = new URLSearchParams({
+                action: 'TEMPLATE',
+                text: event.title,
+                dates: `${formatDate(startDate)}/${formatDate(endDate)}`,
+                details: event.notes || (event.opponent ? `Match vs ${event.opponent}` : 'Training session'),
+                location: event.location || 'Training Ground'
+            });
+            
+            window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank');
+        };
+
+        window.exportToGoogleCalendar = () => {
+            if (events.length === 0) {
+                alert('No events to export');
+                return;
+            }
+            // Export first upcoming event as example
+            const nextEvent = events[0];
+            window.addEventToGoogleCalendar(nextEvent);
+            alert('Opening Google Calendar for the next event. You can add each event individually using the Google icon next to each event.');
+        };
     }
 
     async function renderAdmin() {

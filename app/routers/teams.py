@@ -72,13 +72,33 @@ def update_team(
 
 @router.delete("/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_team(team_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Delete a team (user's team only)."""
+    """Delete a team and all related data (user's team only)."""
+    from app.models.models import MatchSchedule, Player, TrainingSession, SessionStats
+    
     db_team = db.query(Team).filter(Team.id == team_id, Team.user_id == current_user.id).first()
     if not db_team:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Team with id {team_id} not found",
         )
+    
+    # Delete related match schedules first
+    db.query(MatchSchedule).filter(MatchSchedule.team_id == team_id).delete()
+    
+    # Get all players for this team to delete their sessions and stats
+    players = db.query(Player).filter(Player.team_id == team_id).all()
+    for player in players:
+        # Delete session stats for each session
+        sessions = db.query(TrainingSession).filter(TrainingSession.player_id == player.id).all()
+        for session in sessions:
+            db.query(SessionStats).filter(SessionStats.session_id == session.id).delete()
+        # Delete sessions
+        db.query(TrainingSession).filter(TrainingSession.player_id == player.id).delete()
+    
+    # Delete players
+    db.query(Player).filter(Player.team_id == team_id).delete()
+    
+    # Finally delete the team
     db.delete(db_team)
     db.commit()
     return None
