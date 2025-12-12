@@ -82,3 +82,37 @@ def delete_team(team_id: int, current_user: User = Depends(get_current_user), db
     db.delete(db_team)
     db.commit()
     return None
+
+
+@router.post("/seed-demo-data", status_code=status.HTTP_201_CREATED)
+def seed_demo_data_for_user(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Seed demo data (team, players, sessions) for the current user if they have no teams."""
+    if current_user.role == 'admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins cannot seed demo data"
+        )
+    
+    # Check if user already has teams
+    existing_teams = db.query(Team).filter(Team.user_id == current_user.id).count()
+    if existing_teams > 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You already have teams. Delete them first if you want to seed demo data."
+        )
+    
+    # Import and run the seeding functions
+    from app.utils.seed_data import seed_demo_team, seed_demo_players, seed_training_sessions, seed_match_schedule
+    
+    # Create demo team for THIS user
+    team = seed_demo_team(db, current_user)
+    players = seed_demo_players(db, team)
+    seed_training_sessions(db, players)
+    seed_match_schedule(db, team)
+    
+    return {
+        "message": "Demo data seeded successfully!",
+        "team_id": team.id,
+        "team_name": team.name,
+        "players_count": len(players)
+    }

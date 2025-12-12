@@ -644,9 +644,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log(`[DEBUG] renderHome: Loaded insights=${insights ? 'ok' : 'null'}, schedule=${schedule.length}, players=${players.length}`);
 
-        const nextMatch = schedule && schedule.length > 0 ? schedule[0] : null;
+        // Find next match (event with opponent, not just training)
+        const nextMatch = schedule && schedule.length > 0 
+            ? schedule.find(e => e.opponent) || schedule[0] 
+            : null;
         const nextMatchText = nextMatch ? new Date(nextMatch.event_date).toLocaleDateString() : 'No upcoming';
-        const nextMatchOpponent = nextMatch ? nextMatch.opponent : '-';
+        const nextMatchOpponent = nextMatch && nextMatch.opponent ? nextMatch.opponent : (nextMatch ? 'Training' : '-');
         const totalPlayers = players ? players.length : 0;
 
         els.pageContent.innerHTML = `
@@ -806,6 +809,18 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderTeams() {
         const teams = await apiCall('/teams');
         
+        // Show seed demo data option if no teams
+        const noTeamsMessage = teams.length === 0 ? `
+            <div class="glass-panel p-8 rounded-2xl text-center mb-6 border border-dashed border-pitch-accent/30">
+                <i class="fa-solid fa-database text-4xl text-pitch-accent mb-4"></i>
+                <h3 class="text-xl font-bold text-white mb-2">No Teams Yet</h3>
+                <p class="text-gray-400 mb-4">Get started quickly by loading demo data with a team, players, and training sessions.</p>
+                <button onclick="window.seedDemoData()" class="bg-pitch-accent text-pitch-dark px-6 py-3 rounded-lg hover:bg-pitch-accent/90 transition-colors font-medium">
+                    <i class="fa-solid fa-magic mr-2"></i> Load Demo Data
+                </button>
+            </div>
+        ` : '';
+        
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between mb-8">
                 <div>
@@ -816,6 +831,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-plus mr-2"></i> Add Team
                 </button>
             </div>
+
+            ${noTeamsMessage}
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 ${teams.map(team => `
@@ -838,6 +855,20 @@ document.addEventListener('DOMContentLoaded', () => {
         window.openAddTeamModal = openAddTeamModal;
         window.closeAddTeamModal = closeAddTeamModal;
         window.deleteTeam = deleteTeam;
+        window.seedDemoData = async () => {
+            try {
+                const result = await apiCall('/teams/seed-demo-data', 'POST');
+                alert(`Demo data loaded! Created team "${result.team_name}" with ${result.players_count} players.`);
+                // Refresh teams list and select the new team
+                const newTeams = await apiCall('/teams');
+                if (newTeams.length > 0) {
+                    selectTeam(newTeams[0]);
+                }
+                await renderTeams();
+            } catch (e) {
+                alert('Error loading demo data: ' + (e.message || e));
+            }
+        };
         window.selectTeam = (id) => {
             const team = teams.find(t => t.id === id);
             if (team) selectTeam(team);
