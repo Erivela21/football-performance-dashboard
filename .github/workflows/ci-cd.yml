@@ -72,6 +72,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Create deployment package
+        run: |
+          zip -r deploy.zip . -x ".git/*" -x ".github/*" -x "tests/*" -x "*.pyc" -x "__pycache__/*" -x ".gitignore" -x "*.md"
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -81,5 +85,10 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          resource-group-name: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          package: .
+          package: deploy.zip
+
+      - name: Configure Azure Web App startup
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az webapp config set --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} --name ${{ secrets.AZURE_WEBAPP_NAME }} --startup-file "gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000"
