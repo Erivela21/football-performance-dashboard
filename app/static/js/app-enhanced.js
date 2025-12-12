@@ -752,7 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             <!-- Welcome Banner -->
             <div class="glass-panel rounded-2xl p-8 mb-6 bg-gradient-to-r from-pitch-dark to-pitch-accent/10 border border-pitch-accent/20">
-                <h3 class="text-2xl font-bold text-white mb-2">Performance Overview</h3>
+                <h3 class="text-2xl font-bold mb-2 text-shine">Performance Overview</h3>
                 <p class="text-gray-400">Track your team's physical condition and match readiness in real-time.</p>
             </div>
 
