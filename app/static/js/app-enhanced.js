@@ -596,6 +596,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Global Seed Demo Data Function ---
+    window.seedDemoDataGlobal = async function() {
+        try {
+            els.pageContent.innerHTML = '<div class="flex flex-col items-center justify-center p-10"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-pitch-accent mb-4"></i><p class="text-gray-400">Loading demo data...</p></div>';
+            const result = await apiCall('/teams/seed-demo-data', 'POST');
+            alert(`Demo data loaded! Created team "${result.team_name}" with ${result.players_count} players.`);
+            // Refresh teams and select the new team
+            const newTeams = await apiCall('/teams');
+            if (newTeams.length > 0) {
+                selectTeam(newTeams[0]);
+            }
+            await navigateTo('home');
+        } catch (e) {
+            alert('Error loading demo data: ' + (e.message || e));
+            await navigateTo('home');
+        }
+    };
+
     // --- Renderers ---
 
     async function renderHome() {
@@ -652,6 +670,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextMatchOpponent = nextMatch && nextMatch.opponent ? nextMatch.opponent : (nextMatch ? 'Training' : '-');
         const totalPlayers = players ? players.length : 0;
 
+        // Show "Get Started" banner if no data
+        const noDataBanner = totalPlayers === 0 && STATE.user.role !== 'admin' ? `
+            <div class="glass-panel rounded-2xl p-8 mb-6 bg-gradient-to-r from-purple-900/30 to-pitch-accent/10 border border-pitch-accent/30">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="p-4 bg-pitch-accent/20 rounded-full">
+                        <i class="fa-solid fa-wand-magic-sparkles text-3xl text-pitch-accent"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white mb-1">Welcome to PitchPerfect!</h3>
+                        <p class="text-gray-400">Get started by loading demo data or creating your first team.</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="window.seedDemoDataGlobal()" class="bg-pitch-accent text-pitch-dark px-6 py-3 rounded-lg hover:bg-pitch-accent/90 transition-colors font-medium">
+                        <i class="fa-solid fa-magic mr-2"></i> Load Demo Data
+                    </button>
+                    <button onclick="window.navigateTo('teams')" class="bg-pitch-light border border-pitch-accent/30 text-pitch-accent px-6 py-3 rounded-lg hover:bg-pitch-accent hover:text-pitch-dark transition-colors font-medium">
+                        <i class="fa-solid fa-plus mr-2"></i> Create Team Manually
+                    </button>
+                </div>
+            </div>
+        ` : '';
+
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between relative z-10">
                 <div>
@@ -662,6 +703,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <i class="fa-solid fa-download mr-2"></i> Export Report
                 </button>
             </div>
+
+            ${noDataBanner}
 
             <!-- Welcome Banner -->
             <div class="glass-panel rounded-2xl p-8 mb-6 bg-gradient-to-r from-pitch-dark to-pitch-accent/10 border border-pitch-accent/20">
@@ -742,6 +785,26 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderPlayers() {
         const players = await apiCall(`/players${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}&limit=50` : '?limit=50'}`);
         
+        // Show message when no players
+        const noPlayersMessage = players.length === 0 ? `
+            <div class="glass-panel p-8 rounded-2xl text-center border border-dashed border-pitch-accent/30 col-span-full">
+                <i class="fa-solid fa-users-slash text-4xl text-gray-500 mb-4"></i>
+                <h3 class="text-xl font-bold text-white mb-2">No Players Yet</h3>
+                <p class="text-gray-400 mb-4">${STATE.currentTeam ? 'Add players to your team to get started.' : 'Create a team first, or load demo data.'}</p>
+                <div class="flex justify-center gap-4">
+                    ${!STATE.currentTeam ? `
+                        <button onclick="window.seedDemoDataGlobal()" class="bg-pitch-accent text-pitch-dark px-6 py-3 rounded-lg hover:bg-pitch-accent/90 transition-colors font-medium">
+                            <i class="fa-solid fa-magic mr-2"></i> Load Demo Data
+                        </button>
+                    ` : `
+                        <button onclick="window.openAddPlayerModal()" class="bg-pitch-accent text-pitch-dark px-6 py-3 rounded-lg hover:bg-pitch-accent/90 transition-colors font-medium">
+                            <i class="fa-solid fa-plus mr-2"></i> Add Player
+                        </button>
+                    `}
+                </div>
+            </div>
+        ` : '';
+        
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between mb-8">
                 <div>
@@ -754,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${noPlayersMessage}
                 ${players.map(player => `
                     <div class="glass-panel p-6 rounded-2xl hover:bg-white/5 transition-all group relative">
                         <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
