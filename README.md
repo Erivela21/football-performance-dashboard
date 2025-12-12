@@ -2,57 +2,216 @@
 
 A professional trainer dashboard that ingests football athletes' data and transforms it into helpful insights to prevent injury and optimize workload.
 
+**🌐 Live Demo:** [https://football-dashboard-cjgjefhrdncdaad6.westeurope-01.azurewebsites.net](https://football-dashboard-cjgjefhrdncdaad6.westeurope-01.azurewebsites.net)
+
 ---
 
-## Team Structure & Roles
+## Team Members
 
-**Sprint 0 Roles:**
-- **Enrique** - Scrum Master & Documentation Lead
-- **Gonzalo** - Product Owner & Cloud Infrastructure
-- **Matthew** - Backend Developer (API Development)
-- **Manu** - DevOps Engineer (CI/CD Pipeline)
-- **Maximiliano** - Monitoring & Reliability Engineer
-- **Elias** - Frontend/UX Developer & Testing
+| Name | GitHub |
+|------|--------|
+| Enrique | @Erivela21 |
+| Gonzalo | - |
+| Matthew | - |
+| Manu | - |
+| Maximiliano | - |
+| Elias | - |
 
-> **Note:** Product Owner and Scrum Master roles will rotate in future sprints to give everyone leadership experience.
+> **Note:** Product Owner and Scrum Master roles rotate each sprint to give everyone leadership experience.
 
-### Role Responsibilities
+---
 
-**Product Owner (Gonzalo):**
-- Maintain and prioritize product backlog
-- Define user stories and acceptance criteria
-- Stakeholder communication
-- Sprint planning decisions
+## Sprint History
 
-**Scrum Master (Enrique):**
-- Facilitate daily standups and sprint ceremonies
-- Remove blockers and impediments
-- Ensure Scrum practices are followed
-- Document sprint outcomes and retrospectives
+### 🏃 Sprint 1: Azure Infrastructure & Initial Deployment
+**Dates:** November 30 - December 1, 2024
 
-**Backend Developer (Matthew):**
-- Develop FastAPI REST API
-- Implement CRUD operations
-- Database schema design and ORM integration
-- API endpoint testing
+**Roles:**
+| Role | Team Member |
+|------|-------------|
+| Scrum Master | Gonzalo |
+| Product Owner | Enrique |
+| Backend Developer | Matthew |
+| DevOps Engineer | Manu |
+| Cloud Infrastructure | Maximiliano |
+| Testing & QA | Elias |
 
-**DevOps Engineer (Manu):**
-- Set up CI/CD pipeline with GitHub Actions
-- Configure Azure App Service deployment
-- Manage environment variables and secrets
-- Infrastructure automation
+**Objectives:**
+- Set up Azure cloud infrastructure
+- Deploy initial application skeleton to Azure App Service
+- Configure Azure SQL Database connection
+- Establish CI/CD pipeline
 
-**Monitoring & Reliability Engineer (Maximiliano):**
-- Configure Application Insights
-- Set up logging and telemetry
-- Create monitoring dashboards
-- Define health checks and alerts
+**Deliverables:**
+- ✅ Azure App Service created and configured (Python 3.11 runtime)
+- ✅ Azure SQL Server provisioned in West Europe region
+- ✅ Azure SQL Database created with firewall rules configured
+- ✅ ODBC Driver 18 integration for SQL Server connectivity
+- ✅ Environment variables configured in Azure (DB credentials, connection strings)
+- ✅ GitHub Actions CI/CD pipeline established with build, test, and deploy stages
+- ✅ Application successfully deployed and accessible via Azure URL
+- ✅ Health check endpoint (`/health`) confirming database connectivity
+- ✅ Application Insights configured for basic monitoring
+- ✅ Initial FastAPI skeleton with SQLAlchemy ORM setup
 
-**Frontend/UX & Testing (Elias):**
-- Design user interface (if applicable)
-- Write unit and integration tests
-- API documentation and testing
-- Quality assurance
+**Technical Highlights:**
+- Configured `pyodbc` with Azure SQL Database using ODBC Driver 18
+- Set up GitHub Secrets for secure credential management
+- Implemented automatic deployment on push to `main` branch
+- Database connection pooling configured for production performance
+
+---
+
+### 🏃 Sprint 2: Core Features & UI Foundation
+**Dates:** December 2-3, 2024
+
+**Roles:**
+| Role | Team Member |
+|------|-------------|
+| Scrum Master | Matthew |
+| Product Owner | Gonzalo |
+| Backend Developer | Enrique |
+| Frontend Developer | Elias |
+| DevOps Engineer | Maximiliano |
+| Testing & QA | Manu |
+
+**Objectives:**
+- Build core CRUD API endpoints
+- Create frontend UI structure with navigation
+- Implement authentication system
+- Add placeholder analytics pages
+
+**Deliverables:**
+- ✅ Complete Players API with CRUD operations
+- ✅ Training Sessions API with CRUD operations  
+- ✅ Session Statistics API for tracking player metrics
+- ✅ JWT-based authentication system (register/login)
+- ✅ Frontend dashboard with glass-panel UI design
+- ✅ Navigation sidebar with tabs: Home, Teams, Players, Schedule, Analytics
+- ✅ **Analytics section created with sub-pages:**
+  - Training Load page (placeholder - no data visualization yet)
+  - Injury Risk page (placeholder - no data visualization yet)
+- ✅ User login/registration modals
+- ✅ Basic responsive design with Tailwind CSS
+- ✅ Demo user auto-creation on startup (coach/coach123)
+
+**Technical Highlights:**
+- FastAPI routers organized by domain (players, sessions, stats, auth)
+- Pydantic schemas for request/response validation
+- SQLAlchemy models with relationships (Player → Team, Session → Player)
+- Protected endpoints requiring JWT authentication
+- Frontend state management with vanilla JavaScript
+
+---
+
+### 🏃 Sprint 3: Full CRUD & Team Management
+**Dates:** December 4-8, 2024
+
+**Roles:**
+| Role | Team Member |
+|------|-------------|
+| Scrum Master | Manu |
+| Product Owner | Matthew |
+| Backend Developer | Gonzalo |
+| Frontend Developer | Enrique |
+| Database Engineer | Elias |
+| Testing & QA | Maximiliano |
+
+**Objectives:**
+- Complete team management functionality
+- Implement player and team deletion with cascade
+- Add schedule/calendar features
+- Build functional analytics pages
+
+**Deliverables:**
+- ✅ **Teams API** with full CRUD operations
+- ✅ **Create Team** functionality with custom colors
+- ✅ **Delete Team** with cascade delete (removes associated players, sessions, stats, schedules)
+- ✅ **Delete Player** functionality working correctly
+- ✅ **Add Player** modal with photo upload support
+- ✅ **Match Schedule API** for managing events
+- ✅ **Schedule Page** with:
+  - Manual event creation (matches & training)
+  - Google Calendar export (.ics file)
+  - Event filtering by team
+- ✅ **Training Load Page** fully functional with:
+  - Bar charts showing player load scores
+  - Pie charts for load distribution
+  - Summary cards (total players, avg load, optimal/high load counts)
+  - Detailed player table with status indicators
+- ✅ **Injury Risk Page** fully functional with:
+  - Risk score visualization
+  - Risk distribution charts
+  - Individual player risk cards with recommendations
+  - High-risk player alerts
+- ✅ Foreign key constraint fixes for proper cascade deletion
+- ✅ SQL GROUP BY compatibility fixes for Azure SQL (TEXT columns)
+
+**Technical Highlights:**
+- Chart.js integration for data visualization
+- Complex SQL queries for analytics aggregation
+- Cascade delete logic handling multiple foreign key relationships
+- Azure SQL-specific query optimizations (removing TEXT from GROUP BY)
+
+---
+
+### 🏃 Sprint 4: ML Model & UI Polish
+**Dates:** December 9-12, 2024
+
+**Roles:**
+| Role | Team Member |
+|------|-------------|
+| Scrum Master | Elias |
+| Product Owner | Manu |
+| ML Engineer | Enrique |
+| Backend Developer | Maximiliano |
+| Frontend Developer | Gonzalo |
+| Testing & QA | Matthew |
+
+**Objectives:**
+- Implement machine learning injury prediction model
+- Polish UI with animations and effects
+- Add AI-powered recommendations to dashboard
+- Final bug fixes and deployment
+
+**Deliverables:**
+- ✅ **ML Injury Prediction Model:**
+  - Random Forest classifier trained on player metrics
+  - Features: age, training minutes, heart rate, distance, sprint count, session frequency
+  - Predicts injury probability with risk categorization (Low/Medium/High)
+  - Model trained on synthetic data with realistic distributions
+  - Accessible via `/analytics/ml-injury-prediction` endpoint
+- ✅ **ML Predictions Page** with:
+  - Model accuracy and performance metrics
+  - Feature importance visualization
+  - Individual player predictions with confidence scores
+  - Actionable recommendations based on predictions
+- ✅ **Dashboard Enhancements:**
+  - "Next Match" scoreboard widget showing upcoming opponent
+  - AI Recommendations panel with recovery, injury, and workload suggestions
+  - Shiny text animation on "Performance Overview" title
+- ✅ **Loading Animations:**
+  - Custom speeder/rocket loading animation
+  - Shows on add player and add team actions
+  - Smooth page transitions
+- ✅ **Analytics Navigation:**
+  - Collapsible Analytics submenu with chevron toggle
+  - Training Load and Injury Risk as expandable sub-tabs
+- ✅ **Bug Fixes:**
+  - Fixed chart container stretching issues
+  - Fixed AI recommendations showing "undefined" text
+  - Fixed analytics toggle expand/collapse behavior
+- ✅ **CI/CD Improvements:**
+  - ZIP package deployment for Azure
+  - Startup command configuration via Azure CLI
+  - Improved deployment reliability
+
+**Technical Highlights:**
+- Scikit-learn Random Forest model with hyperparameter tuning
+- Model persistence and prediction API endpoint
+- Real-time feature extraction from database
+- CSS animations (keyframes) for visual polish
+- Chart.js with fixed container heights for consistent rendering
 
 ---
 
@@ -306,6 +465,9 @@ football-performance-dashboard/
 - **FastAPI** - Modern Python web framework
 - **SQLAlchemy** - SQL toolkit and ORM
 - **Pydantic** - Data validation
+- **Scikit-learn** - Machine learning (Random Forest)
+- **Chart.js** - Data visualization
+- **Tailwind CSS** - UI styling
 - **Azure SQL Database** - Cloud database
 - **Azure App Service** - Application hosting
 - **Application Insights** - Monitoring and analytics
@@ -314,110 +476,53 @@ football-performance-dashboard/
 
 ---
 
-## Sprint 0 Deliverables ✓
+## Product Backlog
 
-**Completed on November 29, 2024**
+**Priority 1 (MVP - Completed ✅):**
+- ✅ As a coach, I want to add player profiles so I can track their information
+- ✅ As a coach, I want to create training sessions so I can record workouts
+- ✅ As a coach, I want to log session statistics so I can monitor player workload
+- ✅ As a coach, I want to view all players so I can see my roster
+- ✅ As a system, I want health checks so Azure can monitor uptime
+- ✅ As a coach, I want to create and manage teams
+- ✅ As a coach, I want to delete players and teams
 
-- ✓ Team formed with 6 members
-- ✓ Roles assigned (Product Owner, Scrum Master, Developers)
-- ✓ Project idea selected: Football Performance Dashboard
-- ✓ GitHub repository created and initialized
-- ✓ Product backlog drafted with user stories
-- ✓ MVP scope defined (REST API with CRUD operations)
-- ✓ Architecture designed (Azure App Service + SQL Database + Application Insights)
-- ✓ Technology stack selected (FastAPI, SQLAlchemy, pytest)
-- ✓ Project structure created
-- ✓ Documentation completed (README with setup instructions)
-- ✓ Development environment setup (Python venv)
+**Priority 2 (Completed ✅):**
+- ✅ As a coach, I want to see workload charts so I can prevent injuries
+- ✅ As a coach, I want to see injury risk analysis for my players
+- ✅ As a coach, I want to schedule matches and training sessions
+- ✅ As a coach, I want AI recommendations for player recovery
+- ✅ As a coach, I want ML-powered injury predictions
 
-## Sprint 2 Deliverables ✓
-
-**Completed on December 3, 2024**
-
-### Backend Core Features
-- ✓ Extended database models (Team, MatchSchedule, enhanced Player)
-- ✓ Teams API router with full CRUD operations
-- ✓ Schedule API router for match/training calendar management
-- ✓ Analytics API router with advanced features:
-  - Training load analysis with recommendations
-  - Injury risk assessment with multi-factor scoring
-  - Comprehensive insights for recovery and workload optimization
-- ✓ Enhanced Player model with team relationships, jersey numbers, photos
-- ✓ Auto-creation of demo user on startup (demo@coach.com / Demo123)
-
-### Authentication & Security
-- ✓ JWT-based authentication system
-- ✓ Protected API endpoints
-- ✓ User registration and login functionality
-
-### Advanced Analytics
-- ✓ Training load monitoring with actionable recommendations
-- ✓ Injury risk prediction based on multiple factors
-- ✓ Recovery and workload optimization insights
-- ✓ Team-based filtering and analysis
-
-### Frontend Foundation
-- ✓ Enhanced JavaScript utilities (app-enhanced.js)
-- ✓ API integration layer with authentication
-- ✓ Team/Player management functions
-- ✓ PDF/CSV export functionality
-- ✓ Modal and notification systems
-- ✓ React setup prepared for future enhancements
-
-### Documentation
-- ✓ Comprehensive implementation plan (UPGRADE_IMPLEMENTATION_PLAN.md)
-- ✓ Updated API documentation with all new endpoints
-- ✓ Testing checklist and deployment notes
-
-**Next Sprint:** Sprint 3 - Frontend integration, UI polish, and demo preparation
-
----
-
-## Product Backlog (Initial)
-
-**Priority 1 (MVP - Must Have):**
-- As a coach, I want to add player profiles so I can track their information
-- As a coach, I want to create training sessions so I can record workouts
-- As a coach, I want to log session statistics so I can monitor player workload
-- As a coach, I want to view all players so I can see my roster
-- As a system, I want health checks so Azure can monitor uptime
-
-**Priority 2 (Future Enhancements):**
-- As a coach, I want to see workload charts so I can prevent injuries
-- As a coach, I want to filter players by position so I can organize training
-- As a player, I want to view my own stats so I can track progress
-- As a coach, I want to export data to CSV so I can analyze externally
-
-**Priority 3 (Nice to Have):**
-- As a coach, I want injury prediction alerts based on workload trends
-- As a coach, I want to compare players side-by-side
-- As a system admin, I want authentication and authorization
+**Priority 3 (Completed ✅):**
+- ✅ As a coach, I want injury prediction alerts based on ML models
+- ✅ As a system, I want authentication and authorization (JWT)
+- ✅ As a coach, I want to export data (PDF reports, Google Calendar)
 
 ---
 
 ## Definition of Done
 
 A user story is considered "Done" when:
-- [ ] Code is written and follows PEP 8 standards
-- [ ] Unit tests are written and passing (>80% coverage)
-- [ ] API endpoint is documented in Swagger
-- [ ] Code is reviewed by at least one team member
-- [ ] Changes are merged to main branch
-- [ ] Deployed successfully to Azure App Service
-- [ ] Tested in production environment
-- [ ] Product Owner has accepted the feature
+- [x] Code is written and follows PEP 8 standards
+- [x] Unit tests are written and passing
+- [x] API endpoint is documented in Swagger
+- [x] Code is reviewed by at least one team member
+- [x] Changes are merged to main branch
+- [x] Deployed successfully to Azure App Service
+- [x] Tested in production environment
+- [x] Product Owner has accepted the feature
 
 ---
 
-## Sprint Schedule
+## Sprint Schedule Summary
 
-| Sprint | Dates | Goals |
-|--------|-------|-------|
-| Sprint 0 | Nov 27-29 | Team setup, planning, documentation |
-| Sprint 1 | Nov 30-Dec 1 | Azure setup, skeleton app deployment |
-| Sprint 2 | Dec 2-3 | Core features, database, monitoring |
-| Sprint 3 | Dec 4 | Polish, testing, demo preparation |
-| **Demo** | **Dec 4, 2025** | **Sprint Review & Presentation** |
+| Sprint | Dates | Focus | Scrum Master | Product Owner |
+|--------|-------|-------|--------------|---------------|
+| Sprint 1 | Nov 30 - Dec 1 | Azure Infrastructure & Deployment | Gonzalo | Enrique |
+| Sprint 2 | Dec 2-3 | Core Features & UI Foundation | Matthew | Gonzalo |
+| Sprint 3 | Dec 4-8 | Full CRUD & Team Management | Manu | Matthew |
+| Sprint 4 | Dec 9-12 | ML Model & UI Polish | Elias | Manu |
 
 ---
 
