@@ -564,12 +564,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update Sidebar Active State
         els.navItems.forEach(item => {
             const href = item.getAttribute('href').substring(1);
-            if (href === page) {
-                item.classList.remove('text-gray-400', 'hover:bg-white/5');
+            // Handle analytics sub-items specially
+            const isAnalyticsSubPage = ['training-load', 'injury-risk'].includes(page);
+            const isAnalyticsItem = href === 'analytics' || href === 'training-load' || href === 'injury-risk';
+            
+            if (href === page || (href === 'analytics' && isAnalyticsSubPage)) {
+                item.classList.remove('text-gray-400', 'text-gray-500', 'hover:bg-white/5');
                 item.classList.add('bg-pitch-accent/10', 'text-pitch-accent', 'border', 'border-pitch-accent/20');
             } else {
-                item.classList.add('text-gray-400', 'hover:bg-white/5');
                 item.classList.remove('bg-pitch-accent/10', 'text-pitch-accent', 'border', 'border-pitch-accent/20');
+                if (isAnalyticsItem && item.closest('#analytics-submenu')) {
+                    item.classList.add('text-gray-500', 'hover:bg-white/5');
+                } else {
+                    item.classList.add('text-gray-400', 'hover:bg-white/5');
+                }
             }
         });
 
@@ -582,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'home': await renderHome(); break;
                 case 'teams': await renderTeams(); break;
                 case 'players': await renderPlayers(); break;
-                case 'stats': await renderAnalytics(); break;
+                case 'analytics': await renderAnalyticsLanding(); break;
                 case 'training-load': await renderTrainingLoad(); break;
                 case 'injury-risk': await renderInjuryRisk(); break;
                 case 'ml-predictions': await renderMLPredictions(); break;
@@ -939,49 +947,201 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // Analytics Landing Page
+    async function renderAnalyticsLanding() {
+        els.pageContent.innerHTML = `
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-white mb-2">Analytics Dashboard</h2>
+                <p class="text-gray-400">Comprehensive performance insights for your team</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Training Load Card -->
+                <div onclick="window.navigateTo('training-load')" class="glass-panel p-8 rounded-2xl cursor-pointer hover:border-pitch-accent/50 border border-transparent transition-all group">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="p-4 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl">
+                            <i class="fa-solid fa-dumbbell text-3xl text-cyan-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white group-hover:text-pitch-accent transition-colors">Training Load</h3>
+                            <p class="text-gray-400">Monitor workload & performance</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-500 mb-4">Analyze training intensity, duration, and recovery needs for each player. Identify who needs rest and who can push harder.</p>
+                    <div class="flex items-center text-pitch-accent">
+                        <span class="text-sm font-medium">View Analysis</span>
+                        <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-2 transition-transform"></i>
+                    </div>
+                </div>
+
+                <!-- Injury Risk Card -->
+                <div onclick="window.navigateTo('injury-risk')" class="glass-panel p-8 rounded-2xl cursor-pointer hover:border-red-500/50 border border-transparent transition-all group">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="p-4 bg-gradient-to-br from-red-500/20 to-orange-500/20 rounded-xl">
+                            <i class="fa-solid fa-heart-pulse text-3xl text-red-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white group-hover:text-red-400 transition-colors">Injury Risk</h3>
+                            <p class="text-gray-400">Predictive risk assessment</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-500 mb-4">AI-powered injury prediction based on training patterns, biometrics, and historical data. Prevent injuries before they happen.</p>
+                    <div class="flex items-center text-red-400">
+                        <span class="text-sm font-medium">View Analysis</span>
+                        <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-2 transition-transform"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="mt-8 glass-panel p-6 rounded-2xl">
+                <h3 class="text-xl font-bold text-white mb-4">Quick Overview</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-white/5 rounded-xl">
+                        <i class="fa-solid fa-chart-line text-2xl text-pitch-accent mb-2"></i>
+                        <p class="text-2xl font-bold text-white">7</p>
+                        <p class="text-xs text-gray-400">Days Analyzed</p>
+                    </div>
+                    <div class="text-center p-4 bg-white/5 rounded-xl">
+                        <i class="fa-solid fa-users text-2xl text-blue-400 mb-2"></i>
+                        <p class="text-2xl font-bold text-white">${STATE.currentTeam ? '20' : '--'}</p>
+                        <p class="text-xs text-gray-400">Players Tracked</p>
+                    </div>
+                    <div class="text-center p-4 bg-white/5 rounded-xl">
+                        <i class="fa-solid fa-clock text-2xl text-green-400 mb-2"></i>
+                        <p class="text-2xl font-bold text-white">Real-time</p>
+                        <p class="text-xs text-gray-400">Data Updates</p>
+                    </div>
+                    <div class="text-center p-4 bg-white/5 rounded-xl">
+                        <i class="fa-solid fa-brain text-2xl text-purple-400 mb-2"></i>
+                        <p class="text-2xl font-bold text-white">ML</p>
+                        <p class="text-xs text-gray-400">Powered</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        window.navigateTo = navigateTo;
+    }
+
     async function renderTrainingLoad() {
         const data = await apiCall(`/analytics/training-load?days=${STATE.periodDays}${STATE.currentTeam ? `&team_id=${STATE.currentTeam.id}` : ''}`);
+        
+        // Calculate summary stats
+        const totalPlayers = data.players.length;
+        const avgLoad = totalPlayers > 0 ? Math.round(data.players.reduce((acc, p) => acc + p.load_score, 0) / totalPlayers) : 0;
+        const highLoad = data.players.filter(p => p.load_score > 85).length;
+        const optimalLoad = data.players.filter(p => p.load_score >= 50 && p.load_score <= 85).length;
+        const lowLoad = data.players.filter(p => p.load_score < 50).length;
+        
+        // Prepare chart data
+        const chartLabels = data.players.slice(0, 10).map(p => p.player_name.split(' ')[0]);
+        const chartData = data.players.slice(0, 10).map(p => p.load_score);
+        const chartColors = data.players.slice(0, 10).map(p => 
+            p.load_score > 85 ? 'rgba(239, 68, 68, 0.8)' : 
+            p.load_score >= 50 ? 'rgba(34, 197, 94, 0.8)' : 'rgba(234, 179, 8, 0.8)'
+        );
         
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between mb-8">
                 <div>
-                    <h2 class="text-3xl font-bold text-white mb-1">Training Load</h2>
-                    <p class="text-gray-400">Load analysis for last ${STATE.periodDays} days</p>
+                    <h2 class="text-3xl font-bold text-white mb-1">
+                        <i class="fa-solid fa-dumbbell text-cyan-400 mr-3"></i>Training Load Analysis
+                    </h2>
+                    <p class="text-gray-400">Workload analysis for the last ${STATE.periodDays} days</p>
+                </div>
+                <div class="flex gap-2">
+                    <select id="period-select" class="bg-pitch-light border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-pitch-accent focus:outline-none">
+                        <option value="7" ${STATE.periodDays === 7 ? 'selected' : ''}>Last 7 days</option>
+                        <option value="14" ${STATE.periodDays === 14 ? 'selected' : ''}>Last 14 days</option>
+                        <option value="30" ${STATE.periodDays === 30 ? 'selected' : ''}>Last 30 days</option>
+                    </select>
                 </div>
             </div>
 
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-panel p-4 rounded-xl text-center">
+                    <p class="text-3xl font-bold text-white">${totalPlayers}</p>
+                    <p class="text-sm text-gray-400">Players Analyzed</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center">
+                    <p class="text-3xl font-bold text-cyan-400">${avgLoad}%</p>
+                    <p class="text-sm text-gray-400">Avg Load Score</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center">
+                    <p class="text-3xl font-bold text-green-400">${optimalLoad}</p>
+                    <p class="text-sm text-gray-400">Optimal Load</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center">
+                    <p class="text-3xl font-bold text-red-400">${highLoad}</p>
+                    <p class="text-sm text-gray-400">Need Recovery</p>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Load Distribution Bar Chart -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-white mb-4">Player Load Scores</h3>
+                    <canvas id="loadBarChart" height="250"></canvas>
+                </div>
+                
+                <!-- Load Distribution Pie Chart -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-white mb-4">Load Distribution</h3>
+                    <canvas id="loadPieChart" height="250"></canvas>
+                </div>
+            </div>
+
+            <!-- Player Table -->
             <div class="glass-panel rounded-2xl overflow-hidden">
+                <div class="p-4 border-b border-gray-800">
+                    <h3 class="text-lg font-bold text-white">Detailed Player Analysis</h3>
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead class="bg-white/5 text-gray-400 text-xs uppercase">
                             <tr>
                                 <th class="px-6 py-4">Player</th>
+                                <th class="px-6 py-4">Position</th>
                                 <th class="px-6 py-4">Load Score</th>
+                                <th class="px-6 py-4">Sessions</th>
                                 <th class="px-6 py-4">Total Mins</th>
                                 <th class="px-6 py-4">Avg Distance</th>
-                                <th class="px-6 py-4">Recommendation</th>
+                                <th class="px-6 py-4">Status</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-800 text-sm">
-                            ${data.players.map(p => `
+                            ${data.players.length === 0 ? `
+                                <tr><td colspan="7" class="px-6 py-8 text-center text-gray-500">No training data available. Load demo data to see analytics.</td></tr>
+                            ` : data.players.map(p => `
                                 <tr class="hover:bg-white/5 transition-colors">
-                                    <td class="px-6 py-4 flex items-center gap-3">
-                                        <img src="${p.photo_url || `https://ui-avatars.com/api/?name=${p.player_name}&background=random`}" class="w-8 h-8 rounded-full">
-                                        <span class="font-medium text-white">${p.player_name}</span>
-                                    </td>
                                     <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden">
-                                                <div class="h-full ${p.load_score > 85 ? 'bg-red-500' : p.load_score > 50 ? 'bg-green-500' : 'bg-yellow-500'}" style="width: ${p.load_score}%"></div>
-                                            </div>
-                                            <span class="text-white">${p.load_score}%</span>
+                                        <div class="flex items-center gap-3">
+                                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p.player_name)}&background=random" class="w-8 h-8 rounded-full">
+                                            <span class="font-medium text-white">${p.player_name}</span>
                                         </div>
                                     </td>
+                                    <td class="px-6 py-4 text-gray-400">${p.position}</td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                <div class="h-full ${p.load_score > 85 ? 'bg-red-500' : p.load_score >= 50 ? 'bg-green-500' : 'bg-yellow-500'}" style="width: ${p.load_score}%"></div>
+                                            </div>
+                                            <span class="text-white font-medium">${p.load_score}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-white">${p.session_count}</td>
                                     <td class="px-6 py-4 text-white">${p.total_minutes} min</td>
                                     <td class="px-6 py-4 text-white">${p.avg_distance_km} km</td>
                                     <td class="px-6 py-4">
-                                        <span class="px-2 py-1 rounded-full text-xs ${p.status === 'warning' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">
-                                            ${p.recommendation}
+                                        <span class="px-3 py-1 rounded-full text-xs font-medium ${
+                                            p.status === 'warning' ? 'bg-red-500/20 text-red-400' : 
+                                            p.status === 'optimal' ? 'bg-green-500/20 text-green-400' : 
+                                            p.status === 'moderate' ? 'bg-blue-500/20 text-blue-400' :
+                                            'bg-yellow-500/20 text-yellow-400'
+                                        }">
+                                            ${p.status.toUpperCase()}
                                         </span>
                                     </td>
                                 </tr>
@@ -991,49 +1151,244 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>
         `;
+
+        // Period selector
+        document.getElementById('period-select').addEventListener('change', async (e) => {
+            STATE.periodDays = parseInt(e.target.value);
+            await renderTrainingLoad();
+        });
+
+        // Initialize charts if data exists
+        if (data.players.length > 0) {
+            // Bar Chart
+            new Chart(document.getElementById('loadBarChart'), {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Load Score',
+                        data: chartData,
+                        backgroundColor: chartColors,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            // Pie Chart
+            new Chart(document.getElementById('loadPieChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['High Load (Rest Needed)', 'Optimal Load', 'Low Load (Increase)'],
+                    datasets: [{
+                        data: [highLoad, optimalLoad, lowLoad],
+                        backgroundColor: ['rgba(239, 68, 68, 0.8)', 'rgba(34, 197, 94, 0.8)', 'rgba(234, 179, 8, 0.8)'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { color: '#9ca3af', padding: 20 } 
+                        } 
+                    }
+                }
+            });
+        }
     }
 
     async function renderInjuryRisk() {
         const data = await apiCall(`/analytics/injury-risk${STATE.currentTeam ? `?team_id=${STATE.currentTeam.id}` : ''}`);
         
+        // Calculate summary stats
+        const totalPlayers = data.players.length;
+        const highRisk = data.players.filter(p => p.risk_level === 'high').length;
+        const mediumRisk = data.players.filter(p => p.risk_level === 'medium' || p.risk_level === 'low-medium').length;
+        const lowRisk = data.players.filter(p => p.risk_level === 'low').length;
+        const avgRisk = totalPlayers > 0 ? Math.round(data.players.reduce((acc, p) => acc + p.risk_score, 0) / totalPlayers) : 0;
+        
+        // Prepare chart data
+        const riskChartData = data.players.slice(0, 10).map(p => p.risk_score);
+        const riskChartLabels = data.players.slice(0, 10).map(p => p.player_name.split(' ')[0]);
+        const riskChartColors = data.players.slice(0, 10).map(p => 
+            p.risk_level === 'high' ? 'rgba(239, 68, 68, 0.8)' : 
+            p.risk_level === 'medium' || p.risk_level === 'low-medium' ? 'rgba(234, 179, 8, 0.8)' : 
+            'rgba(34, 197, 94, 0.8)'
+        );
+        
         els.pageContent.innerHTML = `
             <div class="flex items-center justify-between mb-8">
                 <div>
-                    <h2 class="text-3xl font-bold text-white mb-1">Injury Risk Analysis</h2>
-                    <p class="text-gray-400">Predictive analysis based on workload and biometrics</p>
+                    <h2 class="text-3xl font-bold text-white mb-1">
+                        <i class="fa-solid fa-heart-pulse text-red-400 mr-3"></i>Injury Risk Analysis
+                    </h2>
+                    <p class="text-gray-400">AI-powered predictive analysis based on workload and biometrics</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-4">
-                ${data.players.map(p => `
-                    <div class="glass-panel p-4 rounded-xl border-l-4 ${p.risk_level === 'high' ? 'border-red-500' : p.risk_level === 'medium' ? 'border-yellow-500' : 'border-green-500'}">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <img src="${p.photo_url || `https://ui-avatars.com/api/?name=${p.player_name}&background=random`}" class="w-12 h-12 rounded-full">
-                                <div>
-                                    <h3 class="font-bold text-white">${p.player_name}</h3>
-                                    <p class="text-sm text-gray-400">${p.position} | Risk Score: ${p.risk_score}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="px-3 py-1 rounded-full text-sm font-bold ${p.risk_level === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">
-                                    ${p.risk_level.toUpperCase()}
-                                </span>
-                            </div>
-                        </div>
-                        ${p.risk_factors.length > 0 ? `
-                            <div class="mt-4 pt-4 border-t border-gray-800">
-                                <p class="text-xs text-gray-500 uppercase mb-2">Risk Factors</p>
-                                <div class="flex flex-wrap gap-2">
-                                    ${p.risk_factors.map(f => `<span class="px-2 py-1 bg-white/5 rounded text-xs text-gray-300">${f}</span>`).join('')}
-                                </div>
-                                <p class="mt-2 text-sm text-pitch-accent"><i class="fa-solid fa-user-doctor mr-2"></i>${p.recommendation}</p>
-                            </div>
-                        ` : ''}
+            <!-- Risk Summary Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-panel p-4 rounded-xl text-center border-t-2 border-red-500">
+                    <p class="text-3xl font-bold text-red-400">${highRisk}</p>
+                    <p class="text-sm text-gray-400">High Risk</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center border-t-2 border-yellow-500">
+                    <p class="text-3xl font-bold text-yellow-400">${mediumRisk}</p>
+                    <p class="text-sm text-gray-400">Medium Risk</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center border-t-2 border-green-500">
+                    <p class="text-3xl font-bold text-green-400">${lowRisk}</p>
+                    <p class="text-sm text-gray-400">Low Risk</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-center">
+                    <p class="text-3xl font-bold text-white">${avgRisk}</p>
+                    <p class="text-sm text-gray-400">Avg Risk Score</p>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Risk Scores Bar Chart -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-white mb-4">Player Risk Scores</h3>
+                    <canvas id="riskBarChart" height="250"></canvas>
+                </div>
+                
+                <!-- Risk Distribution Pie Chart -->
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-white mb-4">Risk Distribution</h3>
+                    <canvas id="riskPieChart" height="250"></canvas>
+                </div>
+            </div>
+
+            <!-- High Risk Alert -->
+            ${highRisk > 0 ? `
+                <div class="glass-panel p-6 rounded-2xl mb-8 border border-red-500/30 bg-red-500/5">
+                    <div class="flex items-center gap-3 mb-4">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl text-red-400"></i>
+                        <h3 class="text-lg font-bold text-red-400">High Risk Players Alert</h3>
                     </div>
-                `).join('')}
+                    <p class="text-gray-400 mb-4">${highRisk} player(s) showing elevated injury risk. Consider rest or reduced training intensity.</p>
+                </div>
+            ` : ''}
+
+            <!-- Player Risk Cards -->
+            <div class="glass-panel rounded-2xl overflow-hidden">
+                <div class="p-4 border-b border-gray-800">
+                    <h3 class="text-lg font-bold text-white">Individual Risk Assessment</h3>
+                </div>
+                <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${data.players.length === 0 ? `
+                        <div class="col-span-2 text-center py-8 text-gray-500">No data available. Load demo data to see injury risk analysis.</div>
+                    ` : data.players.map(p => `
+                        <div class="glass-panel p-4 rounded-xl border-l-4 ${
+                            p.risk_level === 'high' ? 'border-red-500 bg-red-500/5' : 
+                            p.risk_level === 'medium' || p.risk_level === 'low-medium' ? 'border-yellow-500 bg-yellow-500/5' : 
+                            'border-green-500 bg-green-500/5'
+                        }">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(p.player_name)}&background=random" class="w-10 h-10 rounded-full">
+                                    <div>
+                                        <h4 class="font-bold text-white">${p.player_name}</h4>
+                                        <p class="text-xs text-gray-400">${p.position} • Age ${p.age}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="px-3 py-1 rounded-full text-sm font-bold ${
+                                        p.risk_level === 'high' ? 'bg-red-500/20 text-red-400' : 
+                                        p.risk_level === 'medium' || p.risk_level === 'low-medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        'bg-green-500/20 text-green-400'
+                                    }">
+                                        ${p.risk_score}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Risk Bar -->
+                            <div class="mb-3">
+                                <div class="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                                    <div class="h-full ${
+                                        p.risk_level === 'high' ? 'bg-red-500' : 
+                                        p.risk_level === 'medium' || p.risk_level === 'low-medium' ? 'bg-yellow-500' : 'bg-green-500'
+                                    }" style="width: ${p.risk_score}%"></div>
+                                </div>
+                            </div>
+                            
+                            ${p.risk_factors.length > 0 ? `
+                                <div class="flex flex-wrap gap-1 mb-2">
+                                    ${p.risk_factors.map(f => `<span class="px-2 py-0.5 bg-white/10 rounded text-xs text-gray-300">${f}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            <p class="text-xs text-gray-400"><i class="fa-solid fa-user-doctor mr-1 text-pitch-accent"></i>${p.recommendation}</p>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
         `;
+
+        // Initialize charts if data exists
+        if (data.players.length > 0) {
+            // Bar Chart
+            new Chart(document.getElementById('riskBarChart'), {
+                type: 'bar',
+                data: {
+                    labels: riskChartLabels,
+                    datasets: [{
+                        label: 'Risk Score',
+                        data: riskChartData,
+                        backgroundColor: riskChartColors,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' } },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            // Pie Chart
+            new Chart(document.getElementById('riskPieChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                    datasets: [{
+                        data: [highRisk, mediumRisk, lowRisk],
+                        backgroundColor: ['rgba(239, 68, 68, 0.8)', 'rgba(234, 179, 8, 0.8)', 'rgba(34, 197, 94, 0.8)'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { color: '#9ca3af', padding: 20 } 
+                        } 
+                    }
+                }
+            });
+        }
     }
 
     async function renderMLPredictions() {

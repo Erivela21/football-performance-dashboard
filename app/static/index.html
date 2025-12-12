@@ -218,10 +218,30 @@
                     <i class="fa-solid fa-users w-5"></i>
                     <span class="font-medium">Players</span>
                 </a>
-                <a href="#stats" id="stats-nav-link" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
-                    <i class="fa-solid fa-chart-line w-5"></i>
-                    <span class="font-medium">Analytics</span>
+                <a href="#schedule" id="schedule-nav-link" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+                    <i class="fa-solid fa-calendar w-5"></i>
+                    <span class="font-medium">Schedule</span>
                 </a>
+                
+                <!-- Analytics Section with Sub-items -->
+                <div class="analytics-section">
+                    <a href="#analytics" id="analytics-nav-link" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+                        <i class="fa-solid fa-chart-line w-5"></i>
+                        <span class="font-medium">Analytics</span>
+                        <i class="fa-solid fa-chevron-down ml-auto text-xs transition-transform" id="analytics-chevron"></i>
+                    </a>
+                    <div id="analytics-submenu" class="ml-6 mt-1 space-y-1">
+                        <a href="#training-load" id="training-load-nav-link" class="nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-gray-500 hover:bg-white/5 hover:text-white transition-all text-sm">
+                            <i class="fa-solid fa-dumbbell w-4"></i>
+                            <span>Training Load</span>
+                        </a>
+                        <a href="#injury-risk" id="injury-risk-nav-link" class="nav-item flex items-center gap-3 px-4 py-2 rounded-lg text-gray-500 hover:bg-white/5 hover:text-white transition-all text-sm">
+                            <i class="fa-solid fa-heart-pulse w-4"></i>
+                            <span>Injury Risk</span>
+                        </a>
+                    </div>
+                </div>
+                
                 <a href="#ml-predictions" id="ml-nav-link" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all border border-purple-500/30 hover:border-purple-500">
                     <i class="fa-solid fa-brain w-5"></i>
                     <span class="font-medium">ML Predictions</span>

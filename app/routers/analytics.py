@@ -43,11 +43,11 @@ def get_training_load(
         print(f"[DEBUG] Coach {current_user.username} analyzing training load for all their teams")
     
     # Query to get player training load - only from current user's teams
+    # Note: photo_url removed from GROUP BY as TEXT columns can't be grouped in SQL Server
     query = db.query(
         Player.id,
         Player.name,
         Player.position,
-        Player.photo_url,
         func.count(TrainingSession.id).label('session_count'),
         func.sum(TrainingSession.duration_minutes).label('total_minutes'),
         func.avg(SessionStats.distance_km).label('avg_distance'),
@@ -67,7 +67,7 @@ def get_training_load(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id, Player.name, Player.position, Player.photo_url).all()
+    results = query.group_by(Player.id, Player.name, Player.position).all()
     
     players_load = []
     for result in results:
@@ -132,12 +132,12 @@ def get_injury_risk(
     # Get recent data (last 14 days)
     cutoff_date = datetime.utcnow() - timedelta(days=14)
     
+    # Note: photo_url removed from GROUP BY as TEXT columns can't be grouped in SQL Server
     query = db.query(
         Player.id,
         Player.name,
         Player.position,
         Player.birth_date,
-        Player.photo_url,
         func.count(TrainingSession.id).label('session_count'),
         func.sum(TrainingSession.duration_minutes).label('total_minutes'),
         func.avg(SessionStats.max_heart_rate).label('avg_max_hr'),
@@ -153,7 +153,7 @@ def get_injury_risk(
     if team_id:
         query = query.filter(Player.team_id == team_id)
     
-    results = query.group_by(Player.id, Player.name, Player.position, Player.birth_date, Player.photo_url).all()
+    results = query.group_by(Player.id, Player.name, Player.position, Player.birth_date).all()
     
     injury_risks = []
     for result in results:
@@ -213,7 +213,6 @@ def get_injury_risk(
             "player_name": result.name,
             "position": result.position,
             "age": age,
-            "photo_url": result.photo_url,
             "risk_score": risk_score,
             "risk_level": risk_level,
             "risk_factors": risk_factors,
