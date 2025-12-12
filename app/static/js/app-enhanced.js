@@ -568,17 +568,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Navigation & Routing ---
+    // Function to show page loader
+    function showPageLoader() {
+        const pageLoader = document.getElementById('page-loader');
+        if (pageLoader) {
+            pageLoader.classList.add('active');
+        }
+    }
+    
+    // Function to hide page loader
+    function hidePageLoader() {
+        const pageLoader = document.getElementById('page-loader');
+        if (pageLoader) {
+            setTimeout(() => {
+                pageLoader.classList.remove('active');
+            }, 300);
+        }
+    }
+    
+    // Expose loader functions globally
+    window.showPageLoader = showPageLoader;
+    window.hidePageLoader = hidePageLoader;
+
     async function navigateTo(page) {
         // SAFEGUARD: Prevent coaches from accessing admin page
         if (page === 'admin' && STATE.user.role !== 'admin') {
             console.warn(`[DEBUG] Coach ${STATE.user.username} tried to access admin panel - redirecting to home`);
             page = 'home';
-        }
-        
-        // Show page loader
-        const pageLoader = document.getElementById('page-loader');
-        if (pageLoader) {
-            pageLoader.classList.add('active');
         }
         
         // Update Sidebar Active State
@@ -601,11 +617,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Small delay to let the loader animation start
-        await new Promise(resolve => setTimeout(resolve, 100));
-
         // Render Content
-        els.pageContent.innerHTML = '';
+        els.pageContent.innerHTML = '<div class="flex justify-center p-10"><i class="fa-solid fa-circle-notch fa-spin text-4xl text-pitch-accent"></i></div>';
         
         try {
             console.log(`[DEBUG] Navigating to: ${page} (user role: ${STATE.user.role})`);
@@ -624,14 +637,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) {
             console.error(`[DEBUG] Error navigating to ${page}:`, e);
             els.pageContent.innerHTML = `<div class="text-red-500 p-4">Error loading page: ${e.message}</div>`;
-        } finally {
-            // Hide page loader
-            if (pageLoader) {
-                // Small delay to ensure smooth transition
-                setTimeout(() => {
-                    pageLoader.classList.remove('active');
-                }, 300);
-            }
         }
     }
 
@@ -872,7 +877,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <i class="fa-solid fa-bed text-blue-400 mt-0.5"></i>
                                     <div>
                                         <p class="text-sm text-white font-medium">${rec.player_name}</p>
-                                        <p class="text-xs text-gray-400">${rec.recommendation}</p>
+                                        <p class="text-xs text-gray-400">${rec.reason || 'Recovery needed'}</p>
+                                        <p class="text-xs text-blue-400 mt-1"><i class="fa-solid fa-arrow-right mr-1"></i>${rec.action || 'Schedule rest days'}</p>
                                     </div>
                                 </div>
                             `).join('') : ''}
@@ -882,7 +888,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <i class="fa-solid fa-triangle-exclamation text-red-400 mt-0.5"></i>
                                     <div>
                                         <p class="text-sm text-white font-medium">${alert.player_name}</p>
-                                        <p class="text-xs text-gray-400">${alert.alert}</p>
+                                        <p class="text-xs text-gray-400">${alert.risk_factor || 'Elevated injury risk'}</p>
+                                        <p class="text-xs text-red-400 mt-1"><i class="fa-solid fa-shield mr-1"></i>${alert.prevention || 'Monitor closely'}</p>
                                     </div>
                                 </div>
                             `).join('') : ''}
@@ -892,7 +899,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <i class="fa-solid fa-chart-line text-green-400 mt-0.5"></i>
                                     <div>
                                         <p class="text-sm text-white font-medium">${opt.player_name}</p>
-                                        <p class="text-xs text-gray-400">${opt.suggestion}</p>
+                                        <p class="text-xs text-gray-400">Current load: ${opt.current_load || 'Below optimal'}</p>
+                                        <p class="text-xs text-green-400 mt-1"><i class="fa-solid fa-dumbbell mr-1"></i>${opt.recommendation || 'Increase training volume'}</p>
                                     </div>
                                 </div>
                             `).join('') : ''}
@@ -2171,6 +2179,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 errorDiv.classList.add('hidden');
+                
+                // Show loader animation
+                showPageLoader();
+                
                 const playerData = {
                     name,
                     surname: surname || null,
@@ -2193,7 +2205,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.location.hash === '#home' || window.location.hash === '') {
                     await renderHome();
                 }
+                hidePageLoader();
             } catch (e) {
+                hidePageLoader();
                 errorDiv.textContent = e.message || 'Failed to add player';
                 errorDiv.classList.remove('hidden');
             }
@@ -2400,6 +2414,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 errorDiv.classList.add('hidden');
+                
+                // Show loader animation
+                showPageLoader();
+                
                 await apiCall('/teams', 'POST', { 
                     name, 
                     division,
@@ -2408,7 +2426,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 closeAddTeamModal();
                 await loadInitialData();
                 await renderTeams();
+                hidePageLoader();
             } catch (e) {
+                hidePageLoader();
                 errorDiv.textContent = e.message || 'Failed to create team';
                 errorDiv.classList.remove('hidden');
             }
