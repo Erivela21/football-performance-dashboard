@@ -14,7 +14,7 @@ A professional trainer dashboard that ingests football athletes' data and transf
 | Gonzalo | - |
 | Matthew | - |
 | Manu | - |
-| Maximiliano | - |
+| Maximiliano | @maxi-max-max |
 | Elias | - |
 
 > **Note:** Product Owner and Scrum Master roles rotate each sprint to give everyone leadership experience.
@@ -68,11 +68,11 @@ A professional trainer dashboard that ingests football athletes' data and transf
 **Roles:**
 | Role | Team Member |
 |------|-------------|
-| Scrum Master | Matthew |
+| Scrum Master | Maximiliano |
 | Product Owner | Gonzalo |
 | Backend Developer | Enrique |
 | Frontend Developer | Elias |
-| DevOps Engineer | Maximiliano |
+| DevOps Engineer | Matthew |
 | Testing & QA | Manu |
 
 **Objectives:**
@@ -520,7 +520,7 @@ A user story is considered "Done" when:
 | Sprint | Dates | Focus | Scrum Master | Product Owner |
 |--------|-------|-------|--------------|---------------|
 | Sprint 1 | Nov 30 - Dec 1 | Azure Infrastructure & Deployment | Gonzalo | Enrique |
-| Sprint 2 | Dec 2-3 | Core Features & UI Foundation | Matthew | Gonzalo |
+| Sprint 2 | Dec 2-3 | Core Features & UI Foundation | Maximiliano | Gonzalo |
 | Sprint 3 | Dec 4-8 | Full CRUD & Team Management | Manu | Matthew |
 | Sprint 4 | Dec 9-12 | ML Model & UI Polish | Elias | Manu |
 
