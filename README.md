@@ -12,10 +12,10 @@ A professional trainer dashboard that ingests football athletes' data and transf
 |------|--------|
 | Enrique | @Erivela21 |
 | Gonzalo | - |
-| Matthew | - |
-| Manu | - |
+| Matthew | @MMG1324 |
+| Manu | @mmerino90 |
 | Maximiliano | @maxi-max-max |
-| Elias | - |
+| Elias | @chelishino05 |
 
 > **Note:** Product Owner and Scrum Master roles rotate each sprint to give everyone leadership experience.
 
