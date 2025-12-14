@@ -93,7 +93,7 @@ A professional trainer dashboard that ingests football athletes' data and transf
   - Injury Risk page (placeholder - no data visualization yet)
 - ✅ User login/registration modals
 - ✅ Basic responsive design with Tailwind CSS
-- ✅ Demo user auto-creation on startup (coach/coach123)
+- ✅ Demo user auto-creation on startup (demo_coach / Coach1234)
 
 **Technical Highlights:**
 - FastAPI routers organized by domain (players, sessions, stats, auth)
