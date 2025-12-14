@@ -11,7 +11,7 @@ A professional trainer dashboard that ingests football athletes' data and transf
 | Name | GitHub |
 |------|--------|
 | Enrique | @Erivela21 |
-| Gonzalo | - |
+| Gonzalo | @javronich1 |
 | Matthew | @MMG1324 |
 | Manu | @mmerino90 |
 | Maximiliano | @maxi-max-max |
