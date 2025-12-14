@@ -394,6 +394,12 @@ The MVP includes:
    - Swagger UI: http://localhost:8000/docs
    - ReDoc: http://localhost:8000/redoc
 
+### Demo / Test Account
+- Preloaded coach account with sample data:
+  - Username: `demo_coach`
+  - Password: `Coach1234`
+- Use this account to log in via the UI or `/auth/login` and explore teams, players, sessions, analytics, and schedule data without setting up your own records.
+
 ### Running Tests
 
 ```bash
