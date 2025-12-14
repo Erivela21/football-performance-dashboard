@@ -19,6 +19,11 @@ A professional trainer dashboard that ingests football athletes' data and transf
 
 > **Note:** Product Owner and Scrum Master roles rotate each sprint to give everyone leadership experience.
 
+## Documentation
+- Product Backlog & Kanban: [`docs/product_backlog.md`](docs/product_backlog.md)
+- Scrum Artifacts & Sprint Snapshots: [`docs/scrum_artifacts.md`](docs/scrum_artifacts.md)
+- Retrospective Summary: [`docs/retrospective_summary.md`](docs/retrospective_summary.md)
+
 ---
 
 ## Sprint History
